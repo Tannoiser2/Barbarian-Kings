@@ -159,8 +159,8 @@ func _costruisci_mappa() -> void:
 	_mat_mappa = ShaderMaterial.new()
 	var idt: Texture2D
 	if modalita == "moderna":
-		pm.subdivide_width = 340
-		pm.subdivide_depth = 520
+		pm.subdivide_width = 220
+		pm.subdivide_depth = 335
 		_mat_mappa.shader = load("res://scripts/terreno.gdshader")
 		_mat_mappa.set_shader_parameter("mappa", load("res://assets/img/mappa_moderna.webp"))
 		var ril: Texture2D = load("res://assets/img/rilievo.png")
@@ -253,7 +253,7 @@ func _costruisci_vegetazione() -> void:
 		mat.vertex_color_use_as_albedo = true
 		mat.roughness = 0.9
 		mmi.material_override = mat
-		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 		_nodo_mappa.add_child(mmi)
 	# canneti
 	var mm2 := MultiMesh.new()
