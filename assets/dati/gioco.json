@@ -1,0 +1,1870 @@
+{
+ "province": [
+  {
+   "id": 1,
+   "nome": "Sea of Whales",
+   "nome_it": "Mare delle Balene",
+   "tasse": 1,
+   "nativi": "balene",
+   "terreno": "mare",
+   "adiacenti": [
+    2,
+    17,
+    18,
+    19,
+    20,
+    21
+   ],
+   "x": 0.8754,
+   "y": 0.3365
+  },
+  {
+   "id": 2,
+   "nome": "Sea of Ice",
+   "nome_it": "Mare dei Ghiacci",
+   "tasse": 0,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    1,
+    3,
+    5,
+    18,
+    22,
+    23,
+    29
+   ],
+   "x": 0.8454,
+   "y": 0.82
+  },
+  {
+   "id": 3,
+   "nome": "Northern Arm",
+   "nome_it": "Braccio Settentrionale",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    2,
+    4,
+    23,
+    28,
+    29,
+    30
+   ],
+   "x": 0.6982,
+   "y": 0.7892
+  },
+  {
+   "id": 4,
+   "nome": "Dragon's Claw",
+   "nome_it": "Artiglio del Drago",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    3,
+    5,
+    6,
+    28,
+    30,
+    35,
+    36,
+    37,
+    42
+   ],
+   "x": 0.4384,
+   "y": 0.821
+  },
+  {
+   "id": 5,
+   "nome": "Sea of Winds",
+   "nome_it": "Mare dei Venti",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    2,
+    4,
+    6,
+    29,
+    30,
+    37
+   ],
+   "x": 0.5762,
+   "y": 0.9337
+  },
+  {
+   "id": 6,
+   "nome": "Thorian Abyss",
+   "nome_it": "Abisso Toriano",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    4,
+    5,
+    7,
+    37,
+    42,
+    45
+   ],
+   "x": 0.2604,
+   "y": 0.9111
+  },
+  {
+   "id": 7,
+   "nome": "Sta Fira Ocean",
+   "nome_it": "Oceano Sta Fira",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    6,
+    8,
+    11,
+    12,
+    45,
+    47
+   ],
+   "x": 0.0906,
+   "y": 0.8452
+  },
+  {
+   "id": 8,
+   "nome": "South Starsea",
+   "nome_it": "Mare Stellato Sud",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    7,
+    9,
+    11,
+    44,
+    45,
+    47
+   ],
+   "x": 0.1628,
+   "y": 0.5994
+  },
+  {
+   "id": 9,
+   "nome": "East Starsea",
+   "nome_it": "Mare Stellato Est",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    8,
+    10,
+    38,
+    39,
+    44,
+    45
+   ],
+   "x": 0.2924,
+   "y": 0.5991
+  },
+  {
+   "id": 10,
+   "nome": "North Starsea",
+   "nome_it": "Mare Stellato Nord",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    9,
+    11,
+    14,
+    38,
+    41,
+    44
+   ],
+   "x": 0.2959,
+   "y": 0.4159
+  },
+  {
+   "id": 11,
+   "nome": "West Starsea",
+   "nome_it": "Mare Stellato Ovest",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    7,
+    8,
+    10,
+    12,
+    14,
+    43,
+    44,
+    46
+   ],
+   "x": 0.1823,
+   "y": 0.3928
+  },
+  {
+   "id": 12,
+   "nome": "Mel Fira Ocean",
+   "nome_it": "Oceano Mel Fira",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    7,
+    11,
+    13,
+    43,
+    46
+   ],
+   "x": 0.114,
+   "y": 0.1746
+  },
+  {
+   "id": 13,
+   "nome": "Nila's Sea",
+   "nome_it": "Mare di Nila",
+   "tasse": 1,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    12,
+    14,
+    15,
+    16,
+    43
+   ],
+   "x": 0.2662,
+   "y": 0.0768
+  },
+  {
+   "id": 14,
+   "nome": "Strait of Tuli",
+   "nome_it": "Stretto di Tuli",
+   "tasse": 4,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    10,
+    11,
+    13,
+    15,
+    40,
+    41,
+    43
+   ],
+   "x": 0.3105,
+   "y": 0.1976
+  },
+  {
+   "id": 15,
+   "nome": "Bay of Jedren",
+   "nome_it": "Baia di Jedren",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    13,
+    14,
+    16,
+    31,
+    34,
+    38,
+    40
+   ],
+   "x": 0.3999,
+   "y": 0.1311
+  },
+  {
+   "id": 16,
+   "nome": "Sea of Kizann",
+   "nome_it": "Mare di Kizann",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    13,
+    15,
+    17,
+    31
+   ],
+   "x": 0.4995,
+   "y": 0.0724
+  },
+  {
+   "id": 17,
+   "nome": "Gulf of Bornn",
+   "nome_it": "Golfo di Bornn",
+   "tasse": 2,
+   "nativi": "",
+   "terreno": "mare",
+   "adiacenti": [
+    1,
+    16,
+    19,
+    24,
+    31
+   ],
+   "x": 0.7587,
+   "y": 0.0717
+  },
+  {
+   "id": 18,
+   "nome": "Korsland",
+   "nome_it": "Korsland",
+   "tasse": 6,
+   "nativi": "barbari",
+   "terreno": "pianura",
+   "adiacenti": [
+    1,
+    2,
+    21
+   ],
+   "x": 0.9071,
+   "y": 0.5782,
+   "costiera": true
+  },
+  {
+   "id": 19,
+   "nome": "Kann",
+   "nome_it": "Kann",
+   "tasse": 6,
+   "nativi": "barbari",
+   "terreno": "pianura",
+   "adiacenti": [
+    1,
+    17,
+    20,
+    24
+   ],
+   "x": 0.8185,
+   "y": 0.1963,
+   "costiera": true
+  },
+  {
+   "id": 20,
+   "nome": "Arkann",
+   "nome_it": "Arkann",
+   "tasse": 4,
+   "nativi": "barbari",
+   "terreno": "pianura",
+   "adiacenti": [
+    1,
+    19,
+    21,
+    24,
+    25
+   ],
+   "x": 0.7621,
+   "y": 0.2978,
+   "costiera": true
+  },
+  {
+   "id": 21,
+   "nome": "Andesite",
+   "nome_it": "Andesite",
+   "tasse": 8,
+   "nativi": "nani",
+   "terreno": "montagna",
+   "adiacenti": [
+    1,
+    18,
+    20,
+    22,
+    25,
+    26
+   ],
+   "x": 0.7929,
+   "y": 0.4498,
+   "costiera": true
+  },
+  {
+   "id": 22,
+   "nome": "Sira",
+   "nome_it": "Sira",
+   "tasse": 6,
+   "nativi": "elfi",
+   "terreno": "foresta",
+   "adiacenti": [
+    2,
+    21,
+    23,
+    26,
+    27
+   ],
+   "x": 0.7669,
+   "y": 0.5863,
+   "costiera": true
+  },
+  {
+   "id": 23,
+   "nome": "B'nor",
+   "nome_it": "B'nor",
+   "tasse": 2,
+   "nativi": "feudali",
+   "terreno": "foresta",
+   "adiacenti": [
+    2,
+    3,
+    22,
+    27,
+    28
+   ],
+   "x": 0.7311,
+   "y": 0.6955,
+   "costiera": true
+  },
+  {
+   "id": 24,
+   "nome": "Sukann",
+   "nome_it": "Sukann",
+   "tasse": 6,
+   "nativi": "barbari",
+   "terreno": "pianura",
+   "adiacenti": [
+    17,
+    19,
+    20,
+    25,
+    31,
+    32
+   ],
+   "x": 0.6993,
+   "y": 0.1966,
+   "costiera": true
+  },
+  {
+   "id": 25,
+   "nome": "Stel",
+   "nome_it": "Stel",
+   "tasse": 4,
+   "nativi": "nani",
+   "terreno": "montagna",
+   "adiacenti": [
+    20,
+    21,
+    24,
+    26,
+    32
+   ],
+   "x": 0.6809,
+   "y": 0.3448,
+   "costiera": false
+  },
+  {
+   "id": 26,
+   "nome": "Yakash",
+   "nome_it": "Yakash",
+   "tasse": 10,
+   "nativi": "orchi",
+   "terreno": "pianura",
+   "adiacenti": [
+    21,
+    22,
+    25,
+    27,
+    32,
+    33
+   ],
+   "x": 0.6451,
+   "y": 0.454,
+   "costiera": false
+  },
+  {
+   "id": 27,
+   "nome": "Mela",
+   "nome_it": "Mela",
+   "tasse": 3,
+   "nativi": "elfi",
+   "terreno": "foresta",
+   "adiacenti": [
+    22,
+    23,
+    26,
+    28
+   ],
+   "x": 0.6767,
+   "y": 0.5592,
+   "costiera": false
+  },
+  {
+   "id": 28,
+   "nome": "Yaro",
+   "nome_it": "Yaro",
+   "tasse": 8,
+   "nativi": "elfi",
+   "terreno": "foresta",
+   "adiacenti": [
+    3,
+    4,
+    23,
+    27,
+    33,
+    35
+   ],
+   "x": 0.6104,
+   "y": 0.6373,
+   "costiera": true
+  },
+  {
+   "id": 29,
+   "nome": "E'kor",
+   "nome_it": "E'kor",
+   "tasse": 6,
+   "nativi": "barbari",
+   "terreno": "pianura",
+   "adiacenti": [
+    2,
+    3,
+    5,
+    30
+   ],
+   "x": 0.6704,
+   "y": 0.8867,
+   "costiera": true
+  },
+  {
+   "id": 30,
+   "nome": "Shevane",
+   "nome_it": "Shevane",
+   "tasse": 6,
+   "nativi": "civili",
+   "terreno": "pianura",
+   "adiacenti": [
+    3,
+    4,
+    5,
+    29
+   ],
+   "x": 0.5531,
+   "y": 0.7856,
+   "costiera": true
+  },
+  {
+   "id": 31,
+   "nome": "Zann",
+   "nome_it": "Zann",
+   "tasse": 3,
+   "nativi": "barbari",
+   "terreno": "pianura",
+   "adiacenti": [
+    15,
+    16,
+    17,
+    24,
+    32,
+    34
+   ],
+   "x": 0.5775,
+   "y": 0.1969,
+   "costiera": true
+  },
+  {
+   "id": 32,
+   "nome": "Grandarite",
+   "nome_it": "Grandarite",
+   "tasse": 6,
+   "nativi": "nani",
+   "terreno": "montagna",
+   "adiacenti": [
+    24,
+    25,
+    26,
+    31,
+    33,
+    34
+   ],
+   "x": 0.5989,
+   "y": 0.2943,
+   "costiera": false
+  },
+  {
+   "id": 33,
+   "nome": "M'yakash",
+   "nome_it": "M'yakash",
+   "tasse": 4,
+   "nativi": "orchi",
+   "terreno": "pianura",
+   "adiacenti": [
+    26,
+    28,
+    32,
+    34,
+    35
+   ],
+   "x": 0.5565,
+   "y": 0.4776,
+   "costiera": false
+  },
+  {
+   "id": 34,
+   "nome": "Tharady",
+   "nome_it": "Tharady",
+   "tasse": 8,
+   "nativi": "civili",
+   "terreno": "pianura",
+   "adiacenti": [
+    15,
+    31,
+    32,
+    33,
+    35,
+    36,
+    38
+   ],
+   "x": 0.4774,
+   "y": 0.4155,
+   "costiera": true
+  },
+  {
+   "id": 35,
+   "nome": "Sashok",
+   "nome_it": "Sashok",
+   "tasse": 3,
+   "nativi": "orchi",
+   "terreno": "pianura",
+   "adiacenti": [
+    4,
+    28,
+    33,
+    34,
+    36
+   ],
+   "x": 0.516,
+   "y": 0.5635,
+   "costiera": true
+  },
+  {
+   "id": 36,
+   "nome": "Chevois",
+   "nome_it": "Chevois",
+   "tasse": 4,
+   "nativi": "feudali",
+   "terreno": "pianura",
+   "adiacenti": [
+    4,
+    34,
+    35,
+    38,
+    39,
+    42
+   ],
+   "x": 0.4365,
+   "y": 0.6495,
+   "costiera": true
+  },
+  {
+   "id": 37,
+   "nome": "Wys",
+   "nome_it": "Wys",
+   "tasse": 3,
+   "nativi": "aeronauti",
+   "terreno": "pianura",
+   "adiacenti": [
+    4,
+    5,
+    6
+   ],
+   "x": 0.4424,
+   "y": 0.8833,
+   "costiera": true
+  },
+  {
+   "id": 38,
+   "nome": "Drormt",
+   "nome_it": "Drormt",
+   "tasse": 4,
+   "nativi": "palustri",
+   "terreno": "palude",
+   "adiacenti": [
+    9,
+    10,
+    15,
+    34,
+    36,
+    39,
+    40,
+    41
+   ],
+   "x": 0.4112,
+   "y": 0.4858,
+   "costiera": true
+  },
+  {
+   "id": 39,
+   "nome": "Munampt",
+   "nome_it": "Munampt",
+   "tasse": 3,
+   "nativi": "palustri",
+   "terreno": "palude",
+   "adiacenti": [
+    9,
+    36,
+    38,
+    42,
+    45
+   ],
+   "x": 0.3431,
+   "y": 0.6575,
+   "costiera": true
+  },
+  {
+   "id": 40,
+   "nome": "Hadren",
+   "nome_it": "Hadren",
+   "tasse": 4,
+   "nativi": "civili",
+   "terreno": "pianura",
+   "adiacenti": [
+    14,
+    15,
+    38,
+    41
+   ],
+   "x": 0.3843,
+   "y": 0.2676,
+   "costiera": true
+  },
+  {
+   "id": 41,
+   "nome": "Penna",
+   "nome_it": "Penna",
+   "tasse": 6,
+   "nativi": "civili",
+   "terreno": "pianura",
+   "adiacenti": [
+    10,
+    14,
+    38,
+    40
+   ],
+   "x": 0.3592,
+   "y": 0.3612,
+   "costiera": true
+  },
+  {
+   "id": 42,
+   "nome": "Romark",
+   "nome_it": "Romark",
+   "tasse": 2,
+   "nativi": "feudali",
+   "terreno": "pianura",
+   "adiacenti": [
+    4,
+    6,
+    36,
+    39,
+    45
+   ],
+   "x": 0.3408,
+   "y": 0.7744,
+   "costiera": true
+  },
+  {
+   "id": 43,
+   "nome": "Lilla",
+   "nome_it": "Lilla",
+   "tasse": 2,
+   "nativi": "elfi",
+   "terreno": "foresta",
+   "adiacenti": [
+    11,
+    12,
+    13,
+    14,
+    46
+   ],
+   "x": 0.2216,
+   "y": 0.2368,
+   "costiera": true
+  },
+  {
+   "id": 44,
+   "nome": "Starhome",
+   "nome_it": "Starhome",
+   "tasse": 8,
+   "nativi": "pirati",
+   "terreno": "foresta",
+   "adiacenti": [
+    8,
+    9,
+    10,
+    11
+   ],
+   "x": 0.2216,
+   "y": 0.5057,
+   "costiera": true
+  },
+  {
+   "id": 45,
+   "nome": "Thoria",
+   "nome_it": "Thoria",
+   "tasse": 4,
+   "nativi": "civili",
+   "terreno": "pianura",
+   "adiacenti": [
+    6,
+    7,
+    8,
+    9,
+    39,
+    42,
+    47
+   ],
+   "x": 0.217,
+   "y": 0.7435,
+   "costiera": true
+  },
+  {
+   "id": 46,
+   "nome": "Ela",
+   "nome_it": "Ela",
+   "tasse": 4,
+   "nativi": "elfi",
+   "terreno": "foresta",
+   "adiacenti": [
+    11,
+    12,
+    43
+   ],
+   "x": 0.1326,
+   "y": 0.2838,
+   "costiera": true
+  },
+  {
+   "id": 47,
+   "nome": "Chesa",
+   "nome_it": "Chesa",
+   "tasse": 10,
+   "nativi": "civili",
+   "terreno": "pianura",
+   "adiacenti": [
+    7,
+    8,
+    45
+   ],
+   "x": 0.1196,
+   "y": 0.6892,
+   "costiera": true
+  }
+ ],
+ "unita": [
+  {
+   "id": 10,
+   "tipo": "re",
+   "origine": "",
+   "costo": 0,
+   "mant": 0,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Evrin",
+   "nome": "Re Coth"
+  },
+  {
+   "id": 11,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Evrin"
+  },
+  {
+   "id": 12,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Evrin"
+  },
+  {
+   "id": 13,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Evrin"
+  },
+  {
+   "id": 14,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Evrin"
+  },
+  {
+   "id": 20,
+   "tipo": "re",
+   "origine": "",
+   "costo": 0,
+   "mant": 0,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Nol",
+   "nome": "Re Aradren II"
+  },
+  {
+   "id": 21,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Nol"
+  },
+  {
+   "id": 22,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Nol"
+  },
+  {
+   "id": 23,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Nol"
+  },
+  {
+   "id": 24,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Nol"
+  },
+  {
+   "id": 30,
+   "tipo": "re",
+   "origine": "",
+   "costo": 0,
+   "mant": 0,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Melmil",
+   "nome": "Re Fina"
+  },
+  {
+   "id": 31,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Melmil"
+  },
+  {
+   "id": 32,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Melmil"
+  },
+  {
+   "id": 33,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Melmil"
+  },
+  {
+   "id": 34,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Melmil"
+  },
+  {
+   "id": 40,
+   "tipo": "re",
+   "origine": "",
+   "costo": 0,
+   "mant": 0,
+   "forza": 0,
+   "mov": 4,
+   "casa": "LiMoren",
+   "nome": "Re Wil"
+  },
+  {
+   "id": 41,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "LiMoren"
+  },
+  {
+   "id": 42,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "LiMoren"
+  },
+  {
+   "id": 43,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "LiMoren"
+  },
+  {
+   "id": 44,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "LiMoren"
+  },
+  {
+   "id": 50,
+   "tipo": "re",
+   "origine": "",
+   "costo": 0,
+   "mant": 0,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Greensword",
+   "nome": "Re Baxx"
+  },
+  {
+   "id": 51,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Greensword"
+  },
+  {
+   "id": 52,
+   "tipo": "eroe",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Greensword"
+  },
+  {
+   "id": 53,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Greensword"
+  },
+  {
+   "id": 54,
+   "tipo": "mago",
+   "origine": "",
+   "costo": 10,
+   "mant": 4,
+   "forza": 0,
+   "mov": 4,
+   "casa": "Greensword"
+  },
+  {
+   "id": 111,
+   "tipo": "flotta_barbara",
+   "origine": "barbari",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 112,
+   "tipo": "flotta_barbara",
+   "origine": "barbari",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 113,
+   "tipo": "flotta_barbara",
+   "origine": "barbari",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 114,
+   "tipo": "flotta_barbara",
+   "origine": "barbari",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 115,
+   "tipo": "flotta_barbara",
+   "origine": "barbari",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 121,
+   "tipo": "fanteria_barbara",
+   "origine": "barbari",
+   "costo": 4,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 122,
+   "tipo": "fanteria_barbara",
+   "origine": "barbari",
+   "costo": 4,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 123,
+   "tipo": "fanteria_barbara",
+   "origine": "barbari",
+   "costo": 4,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 124,
+   "tipo": "fanteria_barbara",
+   "origine": "barbari",
+   "costo": 4,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 125,
+   "tipo": "fanteria_barbara",
+   "origine": "barbari",
+   "costo": 4,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 126,
+   "tipo": "fanteria_barbara",
+   "origine": "barbari",
+   "costo": 4,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 131,
+   "tipo": "cavalleria_barbara",
+   "origine": "barbari",
+   "costo": 6,
+   "mant": 3,
+   "forza": 2,
+   "mov": 3
+  },
+  {
+   "id": 132,
+   "tipo": "cavalleria_barbara",
+   "origine": "barbari",
+   "costo": 6,
+   "mant": 3,
+   "forza": 2,
+   "mov": 3
+  },
+  {
+   "id": 133,
+   "tipo": "cavalleria_barbara",
+   "origine": "barbari",
+   "costo": 6,
+   "mant": 3,
+   "forza": 2,
+   "mov": 3
+  },
+  {
+   "id": 134,
+   "tipo": "cavalleria_barbara",
+   "origine": "barbari",
+   "costo": 6,
+   "mant": 3,
+   "forza": 2,
+   "mov": 3
+  },
+  {
+   "id": 135,
+   "tipo": "cavalleria_barbara",
+   "origine": "barbari",
+   "costo": 6,
+   "mant": 3,
+   "forza": 2,
+   "mov": 3
+  },
+  {
+   "id": 136,
+   "tipo": "cavalleria_barbara",
+   "origine": "barbari",
+   "costo": 6,
+   "mant": 3,
+   "forza": 2,
+   "mov": 3
+  },
+  {
+   "id": 211,
+   "tipo": "galea",
+   "origine": "civili",
+   "costo": 6,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 212,
+   "tipo": "galea",
+   "origine": "civili",
+   "costo": 6,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 213,
+   "tipo": "galea",
+   "origine": "civili",
+   "costo": 6,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 214,
+   "tipo": "galea",
+   "origine": "civili",
+   "costo": 6,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 215,
+   "tipo": "galea",
+   "origine": "civili",
+   "costo": 6,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 221,
+   "tipo": "legione",
+   "origine": "civili",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 222,
+   "tipo": "legione",
+   "origine": "civili",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 223,
+   "tipo": "legione",
+   "origine": "civili",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 224,
+   "tipo": "legione",
+   "origine": "civili",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 225,
+   "tipo": "legione",
+   "origine": "civili",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 226,
+   "tipo": "legione",
+   "origine": "civili",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 231,
+   "tipo": "catafratti",
+   "origine": "civili",
+   "costo": 10,
+   "mant": 5,
+   "forza": 3,
+   "mov": 3
+  },
+  {
+   "id": 232,
+   "tipo": "catafratti",
+   "origine": "civili",
+   "costo": 10,
+   "mant": 5,
+   "forza": 3,
+   "mov": 3
+  },
+  {
+   "id": 233,
+   "tipo": "catafratti",
+   "origine": "civili",
+   "costo": 10,
+   "mant": 5,
+   "forza": 3,
+   "mov": 3
+  },
+  {
+   "id": 311,
+   "tipo": "flotta_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 312,
+   "tipo": "flotta_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 313,
+   "tipo": "flotta_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 314,
+   "tipo": "flotta_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 315,
+   "tipo": "flotta_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 321,
+   "tipo": "arcieri_elfici",
+   "origine": "elfi",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 322,
+   "tipo": "arcieri_elfici",
+   "origine": "elfi",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 323,
+   "tipo": "arcieri_elfici",
+   "origine": "elfi",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 324,
+   "tipo": "arcieri_elfici",
+   "origine": "elfi",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 325,
+   "tipo": "arcieri_elfici",
+   "origine": "elfi",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 326,
+   "tipo": "arcieri_elfici",
+   "origine": "elfi",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 331,
+   "tipo": "cavalleria_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 4,
+   "forza": 2,
+   "mov": 4
+  },
+  {
+   "id": 332,
+   "tipo": "cavalleria_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 4,
+   "forza": 2,
+   "mov": 4
+  },
+  {
+   "id": 333,
+   "tipo": "cavalleria_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 4,
+   "forza": 2,
+   "mov": 4
+  },
+  {
+   "id": 334,
+   "tipo": "cavalleria_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 4,
+   "forza": 2,
+   "mov": 4
+  },
+  {
+   "id": 335,
+   "tipo": "cavalleria_elfica",
+   "origine": "elfi",
+   "costo": 7,
+   "mant": 4,
+   "forza": 2,
+   "mov": 4
+  },
+  {
+   "id": 411,
+   "tipo": "fanteria_orchesca",
+   "origine": "orchi",
+   "costo": 1,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 412,
+   "tipo": "fanteria_orchesca",
+   "origine": "orchi",
+   "costo": 1,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 413,
+   "tipo": "fanteria_orchesca",
+   "origine": "orchi",
+   "costo": 1,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 414,
+   "tipo": "fanteria_orchesca",
+   "origine": "orchi",
+   "costo": 1,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 415,
+   "tipo": "fanteria_orchesca",
+   "origine": "orchi",
+   "costo": 1,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 416,
+   "tipo": "fanteria_orchesca",
+   "origine": "orchi",
+   "costo": 1,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 421,
+   "tipo": "cavalieri_warg",
+   "origine": "orchi",
+   "costo": 3,
+   "mant": 2,
+   "forza": 1,
+   "mov": 3
+  },
+  {
+   "id": 422,
+   "tipo": "cavalieri_warg",
+   "origine": "orchi",
+   "costo": 3,
+   "mant": 2,
+   "forza": 1,
+   "mov": 3
+  },
+  {
+   "id": 423,
+   "tipo": "cavalieri_warg",
+   "origine": "orchi",
+   "costo": 3,
+   "mant": 2,
+   "forza": 1,
+   "mov": 3
+  },
+  {
+   "id": 424,
+   "tipo": "cavalieri_warg",
+   "origine": "orchi",
+   "costo": 3,
+   "mant": 2,
+   "forza": 1,
+   "mov": 3
+  },
+  {
+   "id": 511,
+   "tipo": "fanteria_nanica",
+   "origine": "nani",
+   "costo": 8,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 512,
+   "tipo": "fanteria_nanica",
+   "origine": "nani",
+   "costo": 8,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 513,
+   "tipo": "fanteria_nanica",
+   "origine": "nani",
+   "costo": 8,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 514,
+   "tipo": "fanteria_nanica",
+   "origine": "nani",
+   "costo": 8,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 515,
+   "tipo": "fanteria_nanica",
+   "origine": "nani",
+   "costo": 8,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 516,
+   "tipo": "fanteria_nanica",
+   "origine": "nani",
+   "costo": 8,
+   "mant": 3,
+   "forza": 3,
+   "mov": 2
+  },
+  {
+   "id": 611,
+   "tipo": "fanteria_feudale",
+   "origine": "feudali",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 612,
+   "tipo": "fanteria_feudale",
+   "origine": "feudali",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 613,
+   "tipo": "fanteria_feudale",
+   "origine": "feudali",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 614,
+   "tipo": "fanteria_feudale",
+   "origine": "feudali",
+   "costo": 2,
+   "mant": 1,
+   "forza": 1,
+   "mov": 2
+  },
+  {
+   "id": 711,
+   "tipo": "rana_da_guerra",
+   "origine": "palustri",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 712,
+   "tipo": "rana_da_guerra",
+   "origine": "palustri",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 811,
+   "tipo": "popolo_balena",
+   "origine": "balene",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 812,
+   "tipo": "popolo_balena",
+   "origine": "balene",
+   "costo": 5,
+   "mant": 2,
+   "forza": 2,
+   "mov": 2
+  },
+  {
+   "id": 911,
+   "tipo": "aeronave",
+   "origine": "aeronauti",
+   "costo": 14,
+   "mant": 5,
+   "forza": 3,
+   "mov": 3
+  },
+  {
+   "id": 912,
+   "tipo": "aeronave",
+   "origine": "aeronauti",
+   "costo": 14,
+   "mant": 5,
+   "forza": 3,
+   "mov": 3
+  },
+  {
+   "id": 951,
+   "tipo": "flotta_pirata",
+   "origine": "pirati",
+   "costo": 8,
+   "mant": 3,
+   "forza": 4,
+   "mov": 2
+  }
+ ],
+ "tipi": {
+  "re": {
+   "nome": "Re",
+   "classe": "capo"
+  },
+  "eroe": {
+   "nome": "Eroe",
+   "classe": "capo"
+  },
+  "mago": {
+   "nome": "Mago",
+   "classe": "mago"
+  },
+  "flotta_barbara": {
+   "nome": "Flotta barbara",
+   "classe": "flotta"
+  },
+  "fanteria_barbara": {
+   "nome": "Fanteria barbara",
+   "classe": "fanteria"
+  },
+  "cavalleria_barbara": {
+   "nome": "Cavalleria barbara",
+   "classe": "cavalleria"
+  },
+  "galea": {
+   "nome": "Flotta di galee",
+   "classe": "flotta"
+  },
+  "legione": {
+   "nome": "Legione",
+   "classe": "fanteria",
+   "legione": true
+  },
+  "catafratti": {
+   "nome": "Catafratti",
+   "classe": "cavalleria"
+  },
+  "flotta_elfica": {
+   "nome": "Flotta elfica",
+   "classe": "flotta"
+  },
+  "arcieri_elfici": {
+   "nome": "Arcieri elfici",
+   "classe": "fanteria"
+  },
+  "cavalleria_elfica": {
+   "nome": "Cavalleria elfica",
+   "classe": "cavalleria"
+  },
+  "fanteria_orchesca": {
+   "nome": "Fanteria orchesca",
+   "classe": "fanteria"
+  },
+  "cavalieri_warg": {
+   "nome": "Cavalieri dei warg",
+   "classe": "cavalleria"
+  },
+  "fanteria_nanica": {
+   "nome": "Fanteria nanica",
+   "classe": "fanteria"
+  },
+  "fanteria_feudale": {
+   "nome": "Fanteria feudale",
+   "classe": "fanteria"
+  },
+  "rana_da_guerra": {
+   "nome": "Rana da guerra",
+   "classe": "rana"
+  },
+  "popolo_balena": {
+   "nome": "Popolo delle balene",
+   "classe": "balena"
+  },
+  "aeronave": {
+   "nome": "Aeronave",
+   "classe": "aeronave"
+  },
+  "flotta_pirata": {
+   "nome": "Flotta pirata",
+   "classe": "flotta"
+  }
+ },
+ "fanteria_nativa": {
+  "barbari": "fanteria_barbara",
+  "civili": "legione",
+  "elfi": "arcieri_elfici",
+  "orchi": "fanteria_orchesca",
+  "nani": "fanteria_nanica",
+  "feudali": "fanteria_feudale",
+  "palustri": "rana_da_guerra",
+  "balene": "popolo_balena",
+  "aeronauti": "aeronave",
+  "pirati": "flotta_pirata"
+ }
+}
