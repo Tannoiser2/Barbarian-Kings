@@ -57,6 +57,9 @@ func _ready() -> void:
 	font_corsivo = load("res://assets/font/FellCorsivo.ttf")
 	_crea_tema()
 	plancia = Plancia3D.new()
+	var imp := ConfigFile.new()
+	imp.load("user://impostazioni.cfg")
+	plancia.modalita = str(imp.get_value("vista", "mappa", "moderna"))
 	add_child(plancia)
 	plancia.vista_iniziale()
 	plancia.provincia_cliccata.connect(_su_click_provincia)
@@ -231,7 +234,25 @@ func _menu() -> void:
 	v.add_child(_bottone("Riprendi la partita salvata", _carica_locale, 22))
 	v.add_child(_bottone("Riprendi dal cloud (Firebase)", _carica_cloud, 22))
 	v.add_child(_bottone("Regole del gioco", _mostra_regole, 22))
-	var n := _etichetta("Versione digitale per uso personale. Mappa e pedine dal modulo TTS; miniature 3D create con Meshy.", 14, false, Color(INCHIOSTRO, 0.7))
+	var hm := HBoxContainer.new()
+	hm.alignment = BoxContainer.ALIGNMENT_CENTER
+	var lm := _etichetta("Mappa:", 18, true)
+	lm.autowrap_mode = TextServer.AUTOWRAP_OFF
+	hm.add_child(lm)
+	var om := OptionButton.new()
+	om.add_item("moderna in rilievo")
+	om.add_item("originale SPI (1980)")
+	om.selected = 0 if plancia.modalita == "moderna" else 1
+	om.item_selected.connect(func(i: int):
+		var mod := "moderna" if i == 0 else "originale"
+		var imp := ConfigFile.new()
+		imp.load("user://impostazioni.cfg")
+		imp.set_value("vista", "mappa", mod)
+		imp.save("user://impostazioni.cfg")
+		plancia.imposta_mappa(mod))
+	hm.add_child(om)
+	v.add_child(hm)
+	var n := _etichetta("Versione digitale per uso personale. Mappa originale e pedine dal modulo TTS, mappa moderna dipinta con ChatGPT, miniature 3D create con Meshy.", 14, false, Color(INCHIOSTRO, 0.7))
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(n)
 
@@ -362,6 +383,8 @@ func _costruisci_gioco() -> void:
 	pm.add_separator()
 	pm.add_check_item("Colora le province per proprietario", 10)
 	pm.add_item("Riporta la telecamera alla vista iniziale", 11)
+	pm.add_item("Mappa moderna in rilievo", 13)
+	pm.add_item("Mappa originale SPI (1980)", 14)
 	pm.add_item("Mostra o nascondi il diario", 12)
 	pm.add_separator()
 	pm.add_item("Salva la partita", 20)
@@ -429,6 +452,13 @@ func _voce_menu(id: int, pm: PopupMenu) -> void:
 			plancia.vista_iniziale()
 		12:
 			diario_box.visible = not diario_box.visible
+		13, 14:
+			var mod := "moderna" if id == 13 else "originale"
+			var imp := ConfigFile.new()
+			imp.load("user://impostazioni.cfg")
+			imp.set_value("vista", "mappa", mod)
+			imp.save("user://impostazioni.cfg")
+			plancia.imposta_mappa(mod)
 		20:
 			_salva_locale()
 		21:

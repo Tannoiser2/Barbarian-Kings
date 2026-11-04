@@ -13,6 +13,9 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   i 16 incantesimi delle quattro scuole, piani di movimento segreti eseguiti punto movimento per punto movimento
   con blocchi, trasporto navale, aeronavi, rane e balene, cattura dei Re, combattimento con la tabella dei risultati,
   terreni, Tattica e Ritirata, indigeni neutrali, vittoria a 120/100/90 di tasse.
+- **Mappa moderna in rilievo** (predefinita): dipinta con ChatGPT sulla geometria originale, con le montagne estruse
+  in 3D, migliaia di alberi 3D nelle foreste, canneti nelle paludi, mare che luccica e nomi delle province scritti
+  sul terreno. Dal menu si torna alla mappa originale SPI.
 - **Tavolo 3D** con la mappa originale ad alta risoluzione su un tavolo di legno; telecamera libera (mouse, tastiera,
   dita); province evidenziabili e cliccabili; stendardi dei proprietari.
 - **Miniature 3D**: Re, Eroe, Mago, Nano, Barbaro, Legionario, Arciere elfico, Orco e Fante feudale creati con Meshy,

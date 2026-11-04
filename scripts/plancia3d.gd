@@ -6,8 +6,13 @@ extends Node3D
 signal provincia_cliccata(p: int)
 signal provincia_sopra(p: int)
 
-const LARGH := 30.0
-const ALT := 30.0 * 3834.0 / 5790.0
+## Due mappe: «moderna» (dipinta, verticale, con rilievo e foreste 3D) e «originale» (la mappa SPI del 1980).
+var modalita := "moderna"
+var LARGH := 20.0
+var ALT := 20.0 * 1541.0 / 1021.0
+var _rilievo: Image
+var _hmax := 1.0
+var _nodo_mappa: Node3D
 
 const MODELLO := {
 	"re": "re", "eroe": "eroe", "mago": "mago",
@@ -52,7 +57,6 @@ var _tinta_controllo := false
 func _ready() -> void:
 	Dati.carica()
 	_costruisci_ambiente()
-	_costruisci_tavolo()
 	_costruisci_mappa()
 	_linee = MeshInstance3D.new()
 	var lm := StandardMaterial3D.new()
@@ -109,7 +113,7 @@ func _costruisci_tavolo() -> void:
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://scripts/legno.gdshader")
 	tav.material_override = mat
-	add_child(tav)
+	_nodo_mappa.add_child(tav)
 	# cornice scura attorno alla mappa
 	var cor := MeshInstance3D.new()
 	var cm := BoxMesh.new()
@@ -120,37 +124,245 @@ func _costruisci_tavolo() -> void:
 	mc.albedo_color = Color(0.18, 0.12, 0.07)
 	mc.roughness = 0.6
 	cor.material_override = mc
-	add_child(cor)
+	_nodo_mappa.add_child(cor)
+
+## Cambia mappa (moderna/originale) e ricostruisce tavolo, rilievo e miniature.
+func imposta_mappa(mod: String) -> void:
+	modalita = mod
+	_costruisci_mappa()
+	vista_iniziale()
+	for id in figure.keys():
+		figure[id].queue_free()
+	figure = {}
+	for q in _bandiere:
+		_bandiere[q].queue_free()
+	_bandiere = {}
+	if m != null:
+		sincronizza()
 
 func _costruisci_mappa() -> void:
+	if _nodo_mappa != null:
+		_nodo_mappa.queue_free()
+	_nodo_mappa = Node3D.new()
+	_nodo_mappa.name = "Mappa"
+	add_child(_nodo_mappa)
+	if modalita == "moderna":
+		LARGH = 20.0
+		ALT = 20.0 * 1541.0 / 1021.0
+	else:
+		LARGH = 30.0
+		ALT = 30.0 * 3834.0 / 5790.0
+	_costruisci_tavolo()
 	var mi := MeshInstance3D.new()
 	var pm := PlaneMesh.new()
 	pm.size = Vector2(LARGH, ALT)
+	_mat_mappa = ShaderMaterial.new()
+	var idt: Texture2D
+	if modalita == "moderna":
+		pm.subdivide_width = 340
+		pm.subdivide_depth = 520
+		_mat_mappa.shader = load("res://scripts/terreno.gdshader")
+		_mat_mappa.set_shader_parameter("mappa", load("res://assets/img/mappa_moderna.webp"))
+		var ril: Texture2D = load("res://assets/img/rilievo.png")
+		_rilievo = ril.get_image()
+		_rilievo.decompress()
+		_mat_mappa.set_shader_parameter("rilievo", ril)
+		var veg = JSON.parse_string(FileAccess.get_file_as_string("res://assets/dati/vegetazione.json"))
+		_hmax = float(veg["hmax"])
+		_mat_mappa.set_shader_parameter("altezza", _hmax)
+		_mat_mappa.set_shader_parameter("dim", Vector2(LARGH, ALT))
+		_mat_mappa.set_shader_parameter("passo", Vector2(1.0 / _rilievo.get_width(), 1.0 / _rilievo.get_height()))
+		idt = load("res://assets/img/province_id_moderna.png")
+	else:
+		_rilievo = null
+		_mat_mappa.shader = load("res://scripts/mappa.gdshader")
+		_mat_mappa.set_shader_parameter("mappa", load("res://assets/img/mappa.webp"))
+		idt = load("res://assets/img/province_id.png")
 	mi.mesh = pm
 	mi.position = Vector3(0, 0.02, 0)
-	_mat_mappa = ShaderMaterial.new()
-	_mat_mappa.shader = load("res://scripts/mappa.gdshader")
-	_mat_mappa.set_shader_parameter("mappa", load("res://assets/img/mappa.webp"))
-	var idt: Texture2D = load("res://assets/img/province_id.png")
 	_id_img = idt.get_image()
+	_id_img.decompress()
 	_mat_mappa.set_shader_parameter("ids", idt)
 	_evid_img = Image.create(64, 1, false, Image.FORMAT_RGBA8)
 	_evid_img.fill(Color(0, 0, 0, 0))
 	_evid_tex = ImageTexture.create_from_image(_evid_img)
 	_mat_mappa.set_shader_parameter("evidenza", _evid_tex)
 	mi.material_override = _mat_mappa
-	add_child(mi)
-	var corpo := StaticBody3D.new()
-	var cs := CollisionShape3D.new()
-	var box := BoxShape3D.new()
-	box.size = Vector3(LARGH, 0.05, ALT)
-	cs.shape = box
-	corpo.add_child(cs)
-	corpo.position = Vector3(0, 0.0, 0)
-	add_child(corpo)
+	_nodo_mappa.add_child(mi)
+	if modalita == "moderna":
+		_costruisci_vegetazione()
+		_costruisci_scritte()
+
+## Altezza del terreno in un punto del tavolo (0 sulla mappa originale, piatta).
+func altezza(pos: Vector3) -> float:
+	if _rilievo == null:
+		return 0.0
+	var u := clampf(pos.x / LARGH + 0.5, 0.0, 0.9999)
+	var v := clampf(pos.z / ALT + 0.5, 0.0, 0.9999)
+	var fx := u * (_rilievo.get_width() - 1)
+	var fy := v * (_rilievo.get_height() - 1)
+	var x0 := int(fx)
+	var y0 := int(fy)
+	var tx := fx - x0
+	var ty := fy - y0
+	var x1 := mini(x0 + 1, _rilievo.get_width() - 1)
+	var y1 := mini(y0 + 1, _rilievo.get_height() - 1)
+	var a := lerpf(_rilievo.get_pixel(x0, y0).r, _rilievo.get_pixel(x1, y0).r, tx)
+	var b := lerpf(_rilievo.get_pixel(x0, y1).r, _rilievo.get_pixel(x1, y1).r, tx)
+	return lerpf(a, b, ty) * _hmax + 0.02
+
+func a_terra(pos: Vector3) -> Vector3:
+	return Vector3(pos.x, altezza(pos), pos.z)
+
+## Foreste di alberi 3D (due varietà) e canneti nelle paludi, disegnati in un colpo solo con MultiMesh.
+func _costruisci_vegetazione() -> void:
+	var veg = JSON.parse_string(FileAccess.get_file_as_string("res://assets/dati/vegetazione.json"))
+	var ancore := []
+	for q in Dati.province:
+		var pr: Dictionary = Dati.province[q]
+		ancore.append(Vector2((pr["mx"] - 0.5) * LARGH, (pr["my"] - 0.5) * ALT))
+	var gruppi := [[], []]
+	for a in veg["alberi"]:
+		var pos := Vector3((float(a[0]) - 0.5) * LARGH, 0, (float(a[1]) - 0.5) * ALT)
+		var libero := true
+		for c in ancore:
+			if (c as Vector2).distance_to(Vector2(pos.x, pos.z)) < 0.85:
+				libero = false
+				break
+		if libero:
+			gruppi[int(a[3]) % 2].append([pos, float(a[2]), int(a[3])])
+	var mesh_tipi := [_mesh_abete(), _mesh_latifoglia()]
+	for k in 2:
+		var mm := MultiMesh.new()
+		mm.transform_format = MultiMesh.TRANSFORM_3D
+		mm.use_colors = true
+		mm.mesh = mesh_tipi[k]
+		mm.instance_count = gruppi[k].size()
+		for i in gruppi[k].size():
+			var e: Array = gruppi[k][i]
+			var pos: Vector3 = e[0]
+			pos.y = altezza(pos) - 0.01
+			var s: float = e[1] * (0.16 if k == 0 else 0.13)
+			var b := Basis(Vector3.UP, float(i) * 1.7).scaled(Vector3(s, s * randf_range(0.9, 1.25), s))
+			mm.set_instance_transform(i, Transform3D(b, pos))
+			var tinte := [Color(0.85, 1.0, 0.85), Color(1.0, 1.0, 0.8), Color(0.75, 0.9, 0.7), Color(1.05, 0.95, 0.75)]
+			mm.set_instance_color(i, tinte[e[2] % 4])
+		var mmi := MultiMeshInstance3D.new()
+		mmi.multimesh = mm
+		var mat := StandardMaterial3D.new()
+		mat.vertex_color_use_as_albedo = true
+		mat.roughness = 0.9
+		mmi.material_override = mat
+		mmi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_ON
+		_nodo_mappa.add_child(mmi)
+	# canneti
+	var mm2 := MultiMesh.new()
+	mm2.transform_format = MultiMesh.TRANSFORM_3D
+	mm2.mesh = _mesh_canna()
+	mm2.instance_count = veg["canne"].size()
+	for i in veg["canne"].size():
+		var a: Array = veg["canne"][i]
+		var pos := Vector3((float(a[0]) - 0.5) * LARGH, 0, (float(a[1]) - 0.5) * ALT)
+		pos.y = altezza(pos) - 0.01
+		var s: float = float(a[2]) * 0.09
+		mm2.set_instance_transform(i, Transform3D(Basis(Vector3.UP, i * 2.3).scaled(Vector3(s, s, s)), pos))
+	var mmi2 := MultiMeshInstance3D.new()
+	mmi2.multimesh = mm2
+	var mc := StandardMaterial3D.new()
+	mc.vertex_color_use_as_albedo = true
+	mc.roughness = 0.9
+	mmi2.material_override = mc
+	_nodo_mappa.add_child(mmi2)
+
+func _aggiungi_cono(st: SurfaceTool, base_y: float, alto: float, r: float, col: Color, lati := 7, off := Vector3.ZERO) -> void:
+	for i in lati:
+		var a0 := TAU * i / lati
+		var a1 := TAU * (i + 1) / lati
+		var p0 := off + Vector3(cos(a0) * r, base_y, sin(a0) * r)
+		var p1 := off + Vector3(cos(a1) * r, base_y, sin(a1) * r)
+		var t := off + Vector3(0, base_y + alto, 0)
+		var n := (p1 - p0).cross(t - p0).normalized()
+		for v in [p0, t, p1]:
+			st.set_color(col)
+			st.set_normal(-n)
+			st.add_vertex(v)
+
+func _mesh_abete() -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_aggiungi_cono(st, 0.0, 0.5, 0.07, Color(0.35, 0.22, 0.12), 5)
+	_aggiungi_cono(st, 0.25, 0.9, 0.42, Color(0.12, 0.32, 0.14))
+	_aggiungi_cono(st, 0.6, 0.8, 0.33, Color(0.15, 0.38, 0.16))
+	_aggiungi_cono(st, 0.95, 0.7, 0.24, Color(0.18, 0.44, 0.18))
+	return st.commit()
+
+func _mesh_latifoglia() -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	_aggiungi_cono(st, 0.0, 0.7, 0.08, Color(0.38, 0.25, 0.13), 5)
+	# chioma: icosfera schiacciata
+	var sf := SphereMesh.new()
+	sf.radius = 0.5
+	sf.height = 0.85
+	sf.radial_segments = 8
+	sf.rings = 5
+	var arr := sf.get_mesh_arrays()
+	var verts: PackedVector3Array = arr[Mesh.ARRAY_VERTEX]
+	var norms: PackedVector3Array = arr[Mesh.ARRAY_NORMAL]
+	var idx: PackedInt32Array = arr[Mesh.ARRAY_INDEX]
+	for k in idx:
+		st.set_color(Color(0.22, 0.42, 0.15))
+		st.set_normal(norms[k])
+		st.add_vertex(verts[k] + Vector3(0, 0.95, 0))
+	return st.commit()
+
+func _mesh_canna() -> Mesh:
+	var st := SurfaceTool.new()
+	st.begin(Mesh.PRIMITIVE_TRIANGLES)
+	for k in 3:
+		var a := k * 2.1
+		var off := Vector3(cos(a) * 0.12, 0, sin(a) * 0.12)
+		_aggiungi_cono(st, 0.0, 1.0 + k * 0.2, 0.03, Color(0.55, 0.52, 0.25), 4, off)
+	return st.commit()
+
+## Nomi, numeri e tasse delle province, scritti in piano sulla mappa con i caratteri del gioco.
+func _costruisci_scritte() -> void:
+	var f_dritto: Font = load("res://assets/font/FellMaiuscoletto.ttf")
+	var f_corsivo: Font = load("res://assets/font/FellCorsivo.ttf")
+	for q in Dati.province:
+		var pr: Dictionary = Dati.province[q]
+		var mare: bool = pr["mare"]
+		var l := Label3D.new()
+		l.text = "%02d %s\n%d" % [q, pr.get("nome_it", pr["nome"]) if mare else pr["nome"], pr["tasse"]]
+		l.font = f_corsivo if mare else f_dritto
+		l.font_size = 64
+		l.pixel_size = 0.0058
+		l.line_spacing = -8
+		l.outline_size = 10
+		if mare:
+			l.modulate = Color(0.95, 0.92, 0.82)
+			l.outline_modulate = Color(0.05, 0.12, 0.18, 0.9)
+		else:
+			l.modulate = Color(0.16, 0.10, 0.05)
+			l.outline_modulate = Color(0.96, 0.90, 0.74, 0.85)
+		l.rotation_degrees = Vector3(-90, 0, 0)
+		l.double_sided = false
+		var pos := Vector3((pr["lx"] - 0.5) * LARGH, 0, (pr["ly"] - 0.5) * ALT)
+		# sopra il punto più alto lì attorno, così le montagne non coprono il nome
+		var hm := altezza(pos)
+		for k in 12:
+			var a := TAU * k / 12.0
+			for r in [0.35, 0.7]:
+				hm = maxf(hm, altezza(pos + Vector3(cos(a) * r, 0, sin(a) * r * 0.5)))
+		pos.y = hm + 0.05
+		l.position = pos
+		l.render_priority = 2
+		_nodo_mappa.add_child(l)
 
 func centro(p: int) -> Vector3:
 	var q: Dictionary = Dati.province[p]
+	if modalita == "moderna":
+		return a_terra(Vector3((q["mx"] - 0.5) * LARGH, 0, (q["my"] - 0.5) * ALT))
 	return Vector3((q["x"] - 0.5) * LARGH, 0.05, (q["y"] - 0.5) * ALT)
 
 func provincia_in(pos: Vector3) -> int:
@@ -243,10 +455,16 @@ func inquadra(p: int, dist := 12.0) -> void:
 		_aggiorna_cam(), 0.0, 1.0, 0.6 / velocita)
 
 func vista_iniziale() -> void:
-	cam_bersaglio = Vector3(0.6, 0, 0)
-	cam_yaw = PI
-	cam_pitch = deg_to_rad(62)
-	cam_dist = 25.0
+	if modalita == "moderna":
+		cam_bersaglio = Vector3(0, 0, 1.6)
+		cam_yaw = PI / 2.0
+		cam_pitch = deg_to_rad(66)
+		cam_dist = 33.0
+	else:
+		cam_bersaglio = Vector3(0.6, 0, 0)
+		cam_yaw = PI
+		cam_pitch = deg_to_rad(62)
+		cam_dist = 25.0
 	_aggiorna_cam()
 
 func _sposta(delta_schermo: Vector2) -> void:
@@ -323,10 +541,15 @@ func _provincia_sotto(pos: Vector2) -> int:
 	var d := cam.project_ray_normal(pos)
 	if absf(d.y) < 0.0001:
 		return 0
-	var t := -(o.y - 0.02) / d.y
-	if t < 0:
-		return 0
-	return provincia_in(o + d * t)
+	var y := 0.02
+	var punto := Vector3.ZERO
+	for k in 4:
+		var t := -(o.y - y) / d.y
+		if t < 0:
+			return 0
+		punto = o + d * t
+		y = altezza(punto)
+	return provincia_in(punto)
 
 # ---------------------------------------------------------------- miniature
 
@@ -504,7 +727,7 @@ func posizioni(p: int) -> Dictionary:
 			var ang := i * 2.39996
 			var r := passo * sqrt(float(i)) * 0.95
 			off = Vector3(cos(ang) * r, 0, sin(ang) * r)
-		out[ids[i]] = c + off
+		out[ids[i]] = a_terra(c + off)
 	return out
 
 func sincronizza() -> void:
@@ -546,7 +769,7 @@ func _aggiorna_bandiere() -> void:
 			b = _crea_bandiera()
 			add_child(b)
 			_bandiere[q] = b
-		b.position = centro(q) + Vector3(0.55, 0, -0.55)
+		b.position = a_terra(centro(q) + Vector3(0.55, 0, -0.55))
 		b.rotation.y = -PI / 2.0
 		var tela: MeshInstance3D = b.get_node("Tela")
 		var mt := StandardMaterial3D.new()
@@ -652,7 +875,7 @@ func _anima_movimenti(lista: Array) -> void:
 			qualcosa = true
 			var ang := k * 2.39996
 			var r := 0.36 * sqrt(float(k)) * 0.95
-			var meta := arrivo + Vector3(cos(ang) * r, 0, sin(ang) * r)
+			var meta := a_terra(arrivo + Vector3(cos(ang) * r, 0, sin(ang) * r))
 			k += 1
 			var dir := meta - f.position
 			if dir.length() > 0.01:
@@ -669,7 +892,11 @@ func _anima_movimenti(lista: Array) -> void:
 				tb.tween_property(mod, "position:y", 0.0, dur / 4).set_trans(Tween.TRANS_SINE)
 				tb.tween_property(mod, "position:y", 0.12, dur / 4).set_trans(Tween.TRANS_SINE)
 				tb.tween_property(mod, "position:y", 0.0, dur / 4).set_trans(Tween.TRANS_SINE)
-			tw.tween_property(f, "position", meta, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
+			var da_pos := f.position
+			tw.tween_method(func(k: float):
+				if is_instance_valid(f):
+					var pp := da_pos.lerp(meta, k)
+					f.position = Vector3(pp.x, maxf(altezza(pp), lerpf(da_pos.y, meta.y, k)), pp.z), 0.0, 1.0, dur).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 			_polvere(f.position)
 		if a > 0 and da > 0 and Dati.is_mare(a) != Dati.is_mare(da):
 			_spruzzo(arrivo)
@@ -718,7 +945,7 @@ func _anima_battaglia(e: Dictionary) -> void:
 				t2.tween_property(mod, "position", Vector3.ZERO, 0.25 / velocita)
 				t2.tween_property(mod, "position", Vector3(0, 0.05, 0.12), 0.18 / velocita)
 				t2.tween_property(mod, "position", Vector3.ZERO, 0.25 / velocita)
-			tw.tween_property(f, "position", f.position.lerp(c, 0.18), 0.4 / velocita)
+			tw.tween_property(f, "position", a_terra(f.position.lerp(c, 0.18)), 0.4 / velocita)
 	_scintille(c + Vector3(0, 0.3, 0), 1.3)
 	_lampo(c + Vector3(0, 1.2, 0), Color(1.0, 0.7, 0.3), 1.2)
 	_etichetta(c + Vector3(0, 1.4, 0), "%s   dado %d" % [e["col"], e["dado"]], Color(1, 0.92, 0.7), 2.2)

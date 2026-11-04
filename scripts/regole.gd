@@ -42,6 +42,7 @@ Ogni incantatore ha valore 2 in ogni ramo che conosce. Per lanciare si tira un d
 	t += """
 [b]Note su questa versione[/b]
 Il modulo TTS è la versione "revised, scripted" del gioco originale: qui il computer tiene la contabilità (tasse, mantenimento, reclutamento) che in origine si faceva con carta e matita. Un Re catturato resta dove è stato preso, sorvegliato da chi l'ha catturato: torna libero se i suoi carcerieri se ne vanno o vengono distrutti, oppure se lo liberano nella fase delle finanze. Il regolamento consigliava di evitare la magia illusoria nelle prime partite.
+La mappa moderna in rilievo è ridisegnata sulla mappa originale; le adiacenze valide restano quelle del regolamento (per esempio Mela non tocca il Braccio Settentrionale, anche se il disegno la avvicina alla costa). Dal menu si può tornare alla mappa originale SPI.
 
 [b]Comandi[/b]
 Tasto destro e trascina: ruota la vista. Tasto centrale, oppure sinistro e trascina: sposta la mappa. Rotellina o due dita: zoom. Tasti W A S D o frecce per spostarsi, Q ed E per ruotare. Clic su una provincia: informazioni o scelta.
