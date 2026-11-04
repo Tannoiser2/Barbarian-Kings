@@ -12,8 +12,21 @@ func _init() -> void:
 	await process_frame
 	await process_frame
 	await _foto(dir + "/00_menu.png")
-	main.umani_locali = [0]
-	main._inizia({"giocatori": [{"nome": "Stefano", "ia": false}, {"nome": "Rosso", "ia": true}, {"nome": "Giallo", "ia": true}, {"nome": "Verde", "ia": true}], "seme": 777, "velocita": 12.0}, [])
+	if args.size() > 2 and args[2] == "libro":
+		for i in Tutorial.capitoli().size():
+			main._libro(i)
+			for k in 3:
+				await process_frame
+			await _foto("%s/libro_%02d.png" % [dir, i])
+		quit()
+		return
+	var guidata := args.size() > 2 and args[2] == "guidata"
+	if guidata:
+		main._avvia_tutorial()
+		main.plancia.velocita = 12.0
+	else:
+		main.umani_locali = [0]
+		main._inizia({"giocatori": [{"nome": "Stefano", "ia": false}, {"nome": "Rosso", "ia": true}, {"nome": "Giallo", "ia": true}, {"nome": "Verde", "ia": true}], "seme": 777, "velocita": 12.0}, [])
 	var viste := {}
 	var t0 := Time.get_ticks_msec()
 	while main.m.turno <= anni and not main.m.finita and Time.get_ticks_msec() - t0 < 900000:
@@ -26,7 +39,13 @@ func _init() -> void:
 				for i in 2:
 					await process_frame
 				await _foto("%s/%02d_%s.png" % [dir, viste.size(), k])
-			main._applica(0, IA.decidi(m, 0))
+				if k in ["acquisti", "piano", "province"]:
+					main._consiglio(0)
+					for i in 3:
+						await process_frame
+					await _foto("%s/%02d_%s_consiglio.png" % [dir, viste.size(), k])
+			if main.m.attese.has(0):
+				main._applica(0, IA.decidi(m, 0))
 	print("arrivato all'anno ", main.m.turno, " fase ", main.m.fase, " in ", (Time.get_ticks_msec() - t0) / 1000, " s")
 	await _foto(dir + "/99_fine.png")
 	quit()

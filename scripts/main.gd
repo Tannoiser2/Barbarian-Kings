@@ -1,5 +1,6 @@
 ## Barbarian Kings, versione digitale: menu, partita locale (IA e passa-il-dispositivo), partita online
-## su Firebase, salvataggi. Il tavolo 3D è in plancia3d.gd, le regole in motore.gd, l'IA in ia.gd.
+## su Firebase, salvataggi, libro delle regole e partita guidata. Il tavolo 3D è in plancia3d.gd,
+## le regole in motore.gd, l'IA in ia.gd, i testi del tutorial in tutorial.gd.
 extends Node
 
 const CARTA := Color(0.95, 0.91, 0.80)
@@ -8,11 +9,16 @@ const INCHIOSTRO := Color(0.20, 0.12, 0.06)
 const BORDO := Color(0.38, 0.24, 0.12)
 const GIALLO := Color(0.96, 0.83, 0.26)
 const MARE := Color(0.42, 0.66, 0.78)
+const ROSSO_TITOLO := Color(0.48, 0.09, 0.05)
+const ORO := Color(0.96, 0.84, 0.52)
+const CREMA := Color(0.99, 0.93, 0.76)
 
 var tema: Theme
 var font_testo: Font
-var font_titolo: Font
+var font_titolo: Font       # Pirata One: titoli
+var font_maiusc: Font       # IM Fell maiuscoletto
 var font_corsivo: Font
+var font_bottone: Font      # Almendra grassetto: pulsanti e nomi
 var plancia: Plancia3D
 var ui: CanvasLayer
 var radice_ui: Control
@@ -35,16 +41,33 @@ var _chiave_pannello := ""
 var barra: HBoxContainer
 var etichetta_fase: Label
 var box_giocatori: HBoxContainer
+var fascia_fasi: HBoxContainer
 var pannello: PanelContainer
 var contenuto: VBoxContainer
+var titolo_pannello: RichTextLabel
+var spiega_pannello: Label
+var piede: HBoxContainer
+var btn_conferma: Button
+var btn_saggio: Button
+var _azione_conferma: Callable = Callable()
 var info: PanelContainer
 var info_testo: RichTextLabel
 var diario: RichTextLabel
 var diario_box: PanelContainer
+var diario_corpo: Control
 var copertura: Control
+var saggio_box: PanelContainer
+var saggio_testo: RichTextLabel
+var saggio_bottoni: HBoxContainer
+var btn_rilievo: Button
+var btn_3d: Button
 var giocatore_ui := -1
 var click_mode: Callable = Callable()
 var _prov_info := 0
+
+# partita guidata
+var tutorial := false
+var tut_visti: Dictionary = {}
 
 # stato dei pannelli
 var st: Dictionary = {}
@@ -53,13 +76,14 @@ func _ready() -> void:
 	Dati.carica()
 	randomize()
 	font_testo = load("res://assets/font/Fell.ttf")
-	font_titolo = load("res://assets/font/FellMaiuscoletto.ttf")
+	font_maiusc = load("res://assets/font/FellMaiuscoletto.ttf")
 	font_corsivo = load("res://assets/font/FellCorsivo.ttf")
+	font_titolo = load("res://assets/font/PirataOne.ttf")
+	font_bottone = load("res://assets/font/AlmendraGrassetto.ttf")
 	_crea_tema()
 	plancia = Plancia3D.new()
-	var imp := ConfigFile.new()
-	imp.load("user://impostazioni.cfg")
-	plancia.modalita = str(imp.get_value("vista", "mappa", "moderna"))
+	plancia.modalita = str(_imp("mappa", "originale"))
+	plancia.stile = str(_imp("stile", "pedine" if plancia.modalita == "originale" else "3d"))
 	add_child(plancia)
 	plancia.vista_iniziale()
 	plancia.provincia_cliccata.connect(_su_click_provincia)
@@ -76,7 +100,53 @@ func _ready() -> void:
 	add_child(rete)
 	_menu()
 
-# ---------------------------------------------------------------- tema grafico (carta, inchiostro, giallo della mappa)
+# ---------------------------------------------------------------- impostazioni salvate
+
+func _imp(chiave: String, predef):
+	var f := ConfigFile.new()
+	f.load("user://impostazioni.cfg")
+	return f.get_value("vista", chiave, predef)
+
+func _salva_imp(chiave: String, val) -> void:
+	var f := ConfigFile.new()
+	f.load("user://impostazioni.cfg")
+	f.set_value("vista", chiave, val)
+	f.save("user://impostazioni.cfg")
+
+## Mappa a rilievo o originale SPI. La mappa originale porta con sé le pedine di cartone,
+## quella a rilievo le miniature; il tasto 3D poi cambia solo le pedine.
+var _cambio_pendente: Callable = Callable()
+
+func _cambia_mappa(rilievo: bool) -> void:
+	if m != null and plancia.occupata():
+		_cambio_pendente = _cambia_mappa.bind(rilievo)
+		return
+	var mod := "moderna" if rilievo else "originale"
+	var sti := "3d" if rilievo else "pedine"
+	_salva_imp("mappa", mod)
+	_salva_imp("stile", sti)
+	plancia.stile = sti
+	plancia.imposta_mappa(mod)
+	_aggiorna_interruttori()
+
+func _cambia_stile(tre_d: bool) -> void:
+	if m != null and plancia.occupata():
+		_cambio_pendente = _cambia_stile.bind(tre_d)
+		return
+	var sti := "3d" if tre_d else "pedine"
+	_salva_imp("stile", sti)
+	plancia.imposta_stile(sti)
+	_aggiorna_interruttori()
+
+func _aggiorna_interruttori() -> void:
+	if btn_rilievo != null and is_instance_valid(btn_rilievo):
+		btn_rilievo.set_pressed_no_signal(plancia.modalita == "moderna")
+		btn_rilievo.tooltip_text = "Mappa a rilievo con montagne e foreste in 3D" if plancia.modalita != "moderna" else "Torna alla mappa originale SPI del 1980"
+	if btn_3d != null and is_instance_valid(btn_3d):
+		btn_3d.set_pressed_no_signal(plancia.stile == "3d")
+		btn_3d.tooltip_text = "Trasforma le pedine in miniature 3D animate" if plancia.stile != "3d" else "Torna alle pedine di cartone originali"
+
+# ---------------------------------------------------------------- tema grafico fantasy (pergamena, cuoio e oro)
 
 func _stile(bg: Color, bordo: Color, larg := 2, raggio := 4, marg := 8) -> StyleBoxFlat:
 	var s := StyleBoxFlat.new()
@@ -92,74 +162,146 @@ func _stile(bg: Color, bordo: Color, larg := 2, raggio := 4, marg := 8) -> Style
 	s.shadow_size = 3
 	return s
 
+func _tex(nome: String) -> Texture2D:
+	return load("res://assets/ui/%s.png" % nome)
+
+## Riquadro a texture con bordi che non si deformano (nove parti).
+func _stile_tex(nome: String, bordo: float, marg_o: float, marg_v: float) -> StyleBoxTexture:
+	var s := StyleBoxTexture.new()
+	s.texture = _tex(nome)
+	s.texture_margin_left = bordo
+	s.texture_margin_right = bordo
+	s.texture_margin_top = bordo
+	s.texture_margin_bottom = bordo
+	s.content_margin_left = marg_o
+	s.content_margin_right = marg_o
+	s.content_margin_top = marg_v
+	s.content_margin_bottom = marg_v
+	return s
+
+func _stile_bottone(nome: String) -> StyleBoxTexture:
+	var s := _stile_tex(nome, 12, 18, 7)
+	s.axis_stretch_horizontal = StyleBoxTexture.AXIS_STRETCH_MODE_STRETCH
+	return s
+
 func _crea_tema() -> void:
 	tema = Theme.new()
 	tema.default_font = font_testo
 	tema.default_font_size = 18
-	tema.set_stylebox("panel", "PanelContainer", _stile(Color(CARTA, 0.96), BORDO, 2, 6, 12))
-	tema.set_stylebox("panel", "Panel", _stile(Color(CARTA, 0.96), BORDO, 2, 6, 12))
+	var perg := _stile_tex("pergamena", 26, 20, 18)
+	tema.set_stylebox("panel", "PanelContainer", perg)
+	tema.set_stylebox("panel", "Panel", perg)
 	tema.set_color("font_color", "Label", INCHIOSTRO)
-	tema.set_color("font_color", "CheckBox", INCHIOSTRO)
-	tema.set_color("font_hover_color", "CheckBox", BORDO)
-	tema.set_color("font_pressed_color", "CheckBox", INCHIOSTRO)
-	tema.set_color("font_hover_pressed_color", "CheckBox", INCHIOSTRO)
 	tema.set_color("default_color", "RichTextLabel", INCHIOSTRO)
 	tema.set_font("normal_font", "RichTextLabel", font_testo)
-	tema.set_font("bold_font", "RichTextLabel", font_titolo)
+	tema.set_font("bold_font", "RichTextLabel", font_bottone)
 	tema.set_font("italics_font", "RichTextLabel", font_corsivo)
 	tema.set_font_size("normal_font_size", "RichTextLabel", 17)
-	tema.set_font_size("bold_font_size", "RichTextLabel", 18)
+	tema.set_font_size("bold_font_size", "RichTextLabel", 16)
 	tema.set_font_size("italics_font_size", "RichTextLabel", 17)
-	var bn := _stile(GIALLO, BORDO, 2, 5, 10)
-	var bh := _stile(GIALLO.lightened(0.25), BORDO, 2, 5, 10)
-	var bp := _stile(GIALLO.darkened(0.15), BORDO, 2, 5, 10)
-	var bd := _stile(CARTA_SCURA, Color(BORDO, 0.4), 2, 5, 10)
-	for t in ["Button", "OptionButton"]:
-		tema.set_stylebox("normal", t, bn)
-		tema.set_stylebox("hover", t, bh)
-		tema.set_stylebox("pressed", t, bp)
-		tema.set_stylebox("disabled", t, bd)
+	# pulsanti di cuoio con bordo d'oro
+	for t in ["Button", "MenuButton"]:
+		tema.set_stylebox("normal", t, _stile_bottone("bottone"))
+		tema.set_stylebox("hover", t, _stile_bottone("bottone_su"))
+		tema.set_stylebox("pressed", t, _stile_bottone("bottone_giu"))
+		tema.set_stylebox("hover_pressed", t, _stile_bottone("bottone_giu"))
+		tema.set_stylebox("disabled", t, _stile_bottone("bottone_spento"))
+	tema.set_stylebox("normal", "OptionButton", _stile_bottone("bottone2"))
+	tema.set_stylebox("hover", "OptionButton", _stile_bottone("bottone2_su"))
+	tema.set_stylebox("pressed", "OptionButton", _stile_bottone("bottone2_su"))
+	tema.set_stylebox("disabled", "OptionButton", _stile_bottone("bottone_spento"))
+	tema.set_icon("arrow", "OptionButton", _tex("freccia_giu"))
+	for t in ["Button", "MenuButton", "OptionButton"]:
 		tema.set_stylebox("focus", t, StyleBoxEmpty.new())
-		tema.set_color("font_color", t, INCHIOSTRO)
-		tema.set_color("font_hover_color", t, INCHIOSTRO)
-		tema.set_color("font_pressed_color", t, INCHIOSTRO)
-		tema.set_color("font_focus_color", t, INCHIOSTRO)
-		tema.set_color("font_disabled_color", t, Color(INCHIOSTRO, 0.45))
-		tema.set_font("font", t, font_titolo)
-		tema.set_font_size("font_size", t, 18)
+		tema.set_color("font_color", t, CREMA)
+		tema.set_color("font_hover_color", t, Color(1, 0.98, 0.86))
+		tema.set_color("font_pressed_color", t, ORO)
+		tema.set_color("font_hover_pressed_color", t, ORO)
+		tema.set_color("font_focus_color", t, CREMA)
+		tema.set_color("font_disabled_color", t, Color(CREMA, 0.45))
+		tema.set_color("font_outline_color", t, Color(0.16, 0.06, 0.02))
+		tema.set_constant("outline_size", t, 3)
+		tema.set_font("font", t, font_bottone)
+		tema.set_font_size("font_size", t, 17)
+	# caselle da spuntare
 	for st_nome in ["normal", "hover", "pressed", "hover_pressed", "disabled", "focus"]:
 		tema.set_stylebox(st_nome, "CheckBox", StyleBoxEmpty.new())
+	tema.set_icon("unchecked", "CheckBox", _tex("casella"))
+	tema.set_icon("checked", "CheckBox", _tex("casella_si"))
+	tema.set_icon("unchecked_disabled", "CheckBox", _tex("casella"))
+	tema.set_icon("checked_disabled", "CheckBox", _tex("casella_si"))
+	tema.set_constant("h_separation", "CheckBox", 8)
 	tema.set_font("font", "CheckBox", font_testo)
 	tema.set_font_size("font_size", "CheckBox", 17)
-	tema.set_stylebox("normal", "LineEdit", _stile(Color(1, 0.98, 0.92), BORDO, 1, 3, 6))
-	tema.set_stylebox("focus", "LineEdit", _stile(Color(1, 0.98, 0.92), GIALLO.darkened(0.3), 2, 3, 6))
+	tema.set_color("font_color", "CheckBox", INCHIOSTRO)
+	tema.set_color("font_hover_color", "CheckBox", ROSSO_TITOLO)
+	tema.set_color("font_pressed_color", "CheckBox", INCHIOSTRO)
+	tema.set_color("font_hover_pressed_color", "CheckBox", ROSSO_TITOLO)
+	tema.set_color("font_disabled_color", "CheckBox", Color(INCHIOSTRO, 0.45))
+	# campi di testo
+	var campo := _stile(Color(1, 0.97, 0.88), BORDO, 1, 3, 8)
+	campo.shadow_size = 0
+	tema.set_stylebox("normal", "LineEdit", campo)
+	var campo_f := campo.duplicate() as StyleBoxFlat
+	campo_f.border_color = Color(0.75, 0.55, 0.15)
+	campo_f.set_border_width_all(2)
+	tema.set_stylebox("focus", "LineEdit", campo_f)
 	tema.set_color("font_color", "LineEdit", INCHIOSTRO)
-	tema.set_stylebox("normal", "SpinBox", _stile(Color(1, 0.98, 0.92), BORDO, 1, 3, 4))
-	tema.set_stylebox("panel", "PopupMenu", _stile(CARTA, BORDO, 2, 4, 6))
+	tema.set_color("caret_color", "LineEdit", INCHIOSTRO)
+	tema.set_font("font", "LineEdit", font_testo)
+	# menu a tendina e suggerimenti
+	tema.set_stylebox("panel", "PopupMenu", _stile_tex("pergamena_scura", 26, 12, 12))
 	tema.set_color("font_color", "PopupMenu", INCHIOSTRO)
-	tema.set_color("font_hover_color", "PopupMenu", BORDO)
-	tema.set_stylebox("hover", "PopupMenu", _stile(GIALLO.lightened(0.2), Color(0, 0, 0, 0), 0, 2, 4))
-	tema.set_stylebox("panel", "TooltipPanel", _stile(CARTA, BORDO, 1, 3, 6))
+	tema.set_color("font_hover_color", "PopupMenu", ROSSO_TITOLO)
+	tema.set_font("font", "PopupMenu", font_testo)
+	tema.set_font_size("font_size", "PopupMenu", 17)
+	var sel := _stile(Color(0.96, 0.84, 0.52, 0.55), Color(0, 0, 0, 0), 0, 3, 4)
+	sel.shadow_size = 0
+	tema.set_stylebox("hover", "PopupMenu", sel)
+	tema.set_stylebox("panel", "TooltipPanel", _stile_tex("pergamena", 26, 12, 8))
 	tema.set_color("font_color", "TooltipLabel", INCHIOSTRO)
-	tema.set_stylebox("background", "ProgressBar", _stile(CARTA_SCURA, BORDO, 1, 3, 2))
-	tema.set_stylebox("fill", "ProgressBar", _stile(GIALLO, BORDO, 1, 3, 2))
-	tema.set_stylebox("panel", "ItemList", _stile(Color(1, 0.98, 0.92), BORDO, 1, 3, 4))
+	tema.set_font("font", "TooltipLabel", font_testo)
+	tema.set_font_size("font_size", "TooltipLabel", 16)
+	# barra delle tasse
+	var pb_fondo := _stile(Color(0.18, 0.10, 0.05, 0.85), Color(0.75, 0.58, 0.25), 1, 3, 0)
+	pb_fondo.shadow_size = 0
+	var pb_pieno := _stile(Color(0.85, 0.66, 0.2), Color(0, 0, 0, 0), 0, 3, 0)
+	pb_pieno.shadow_size = 0
+	tema.set_stylebox("background", "ProgressBar", pb_fondo)
+	tema.set_stylebox("fill", "ProgressBar", pb_pieno)
+	# barre di scorrimento sottili
+	var sb := _stile(Color(0.3, 0.2, 0.1, 0.18), Color(0, 0, 0, 0), 0, 4, 0)
+	sb.shadow_size = 0
+	sb.content_margin_left = 5
+	sb.content_margin_right = 5
+	var gr := _stile(Color(0.45, 0.28, 0.12, 0.8), Color(0, 0, 0, 0), 0, 4, 0)
+	gr.shadow_size = 0
+	var gr_h := gr.duplicate() as StyleBoxFlat
+	gr_h.bg_color = Color(0.6, 0.38, 0.14, 0.95)
+	tema.set_stylebox("scroll", "VScrollBar", sb)
+	tema.set_stylebox("grabber", "VScrollBar", gr)
+	tema.set_stylebox("grabber_highlight", "VScrollBar", gr_h)
+	tema.set_stylebox("grabber_pressed", "VScrollBar", gr_h)
+	tema.set_stylebox("panel", "ItemList", campo)
 	tema.set_color("font_color", "ItemList", INCHIOSTRO)
 	tema.set_color("font_selected_color", "ItemList", INCHIOSTRO)
-	tema.set_stylebox("selected", "ItemList", _stile(GIALLO, BORDO, 1, 2, 2))
-	tema.set_stylebox("selected_focus", "ItemList", _stile(GIALLO, BORDO, 1, 2, 2))
+	tema.set_stylebox("selected", "ItemList", sel)
+	tema.set_stylebox("selected_focus", "ItemList", sel)
 
 func _pulisci_ui() -> void:
 	for c in radice_ui.get_children():
 		c.queue_free()
 	click_mode = Callable()
+	saggio_box = null
+	btn_rilievo = null
+	btn_3d = null
 
 func _etichetta(t: String, dim := 18, titolo := false, col := INCHIOSTRO) -> Label:
 	var l := Label.new()
 	l.text = t
 	l.add_theme_font_override("font", font_titolo if titolo else font_testo)
-	l.add_theme_font_size_override("font_size", dim)
-	l.add_theme_color_override("font_color", col)
+	l.add_theme_font_size_override("font_size", dim + 4 if titolo else dim)
+	l.add_theme_color_override("font_color", ROSSO_TITOLO if titolo and col == INCHIOSTRO else col)
 	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return l
 
@@ -200,7 +342,7 @@ func _nome_colore(p: int) -> String:
 func _schermo_centrale(larg := 560) -> VBoxContainer:
 	_pulisci_ui()
 	var fondo := ColorRect.new()
-	fondo.color = Color(0.05, 0.03, 0.02, 0.45)
+	fondo.color = Color(0.05, 0.03, 0.02, 0.55)
 	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
 	radice_ui.add_child(fondo)
 	var cc := CenterContainer.new()
@@ -208,6 +350,7 @@ func _schermo_centrale(larg := 560) -> VBoxContainer:
 	radice_ui.add_child(cc)
 	var pc := PanelContainer.new()
 	pc.custom_minimum_size = Vector2(larg, 0)
+	pc.add_theme_stylebox_override("panel", _stile_tex("pergamena", 26, 34, 26))
 	cc.add_child(pc)
 	var v := VBoxContainer.new()
 	v.add_theme_constant_override("separation", 10)
@@ -222,37 +365,73 @@ func _logo(v: VBoxContainer, h := 150) -> void:
 	tr.custom_minimum_size = Vector2(0, h)
 	v.add_child(tr)
 
+func _divisore(v: Control, larg := 0) -> void:
+	var tr := TextureRect.new()
+	tr.texture = _tex("divisore")
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.custom_minimum_size = Vector2(larg, 18)
+	tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(tr)
+
+## Cambia l'aspetto di un pulsante: "verde" (azione principale), "secondario" (cuoio bruno).
+func _veste(b: Button, tipo: String) -> Button:
+	var base := "bottone_verde" if tipo == "verde" else "bottone2"
+	b.add_theme_stylebox_override("normal", _stile_bottone(base))
+	b.add_theme_stylebox_override("hover", _stile_bottone(base + "_su"))
+	if tipo == "verde":
+		b.add_theme_stylebox_override("pressed", _stile_bottone("bottone_verde_su"))
+	return b
+
+func _interruttori(h: HBoxContainer, dim := 16) -> void:
+	btn_rilievo = _bottone("Mappa a rilievo", func(): _cambia_mappa(btn_rilievo.button_pressed), dim)
+	btn_rilievo.toggle_mode = true
+	_veste(btn_rilievo, "secondario")
+	h.add_child(btn_rilievo)
+	btn_3d = _bottone("3D", func(): _cambia_stile(btn_3d.button_pressed), dim)
+	btn_3d.toggle_mode = true
+	btn_3d.custom_minimum_size = Vector2(64, 0)
+	_veste(btn_3d, "secondario")
+	h.add_child(btn_3d)
+	_aggiorna_interruttori()
+
 func _menu() -> void:
-	var v := _schermo_centrale(520)
-	_logo(v)
-	var s := _etichetta("Imperi fantasy in conflitto - SPI, 1980", 20, false, BORDO)
+	tutorial = false
+	var v := _schermo_centrale(540)
+	_logo(v, 140)
+	var s := _etichetta("Imperi fantasy in conflitto  -  SPI, 1980", 20, false, BORDO)
 	s.add_theme_font_override("font", font_corsivo)
 	s.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(s)
-	v.add_child(_bottone("Nuova partita", _impostazioni_locali, 22))
-	v.add_child(_bottone("Gioca online con gli amici", _menu_online, 22))
-	v.add_child(_bottone("Riprendi la partita salvata", _carica_locale, 22))
-	v.add_child(_bottone("Riprendi dal cloud (Firebase)", _carica_cloud, 22))
-	v.add_child(_bottone("Regole del gioco", _mostra_regole, 22))
+	_divisore(v)
+	var g := _veste(_bottone("Partita guidata con il Saggio", _avvia_tutorial, 22), "verde")
+	g.custom_minimum_size = Vector2(0, 54)
+	g.tooltip_text = "Una vera partita contro Re Baxx: il Saggio ti spiega ogni fase, passo per passo."
+	v.add_child(g)
+	v.add_child(_veste(_bottone("Come si gioca: il libro delle regole", func(): _libro(0), 19), "secondario"))
+	_divisore(v)
+	v.add_child(_bottone("Nuova partita", _impostazioni_locali, 21))
+	v.add_child(_bottone("Gioca online con gli amici", _menu_online, 21))
+	var hr := HBoxContainer.new()
+	hr.add_theme_constant_override("separation", 8)
+	var b1 := _bottone("Riprendi la partita", _carica_locale, 17)
+	b1.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hr.add_child(b1)
+	var b2 := _bottone("Riprendi dal cloud", _carica_cloud, 17)
+	b2.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	b2.tooltip_text = "Carica una partita salvata su Firebase con il suo codice"
+	hr.add_child(b2)
+	v.add_child(hr)
+	_divisore(v)
 	var hm := HBoxContainer.new()
 	hm.alignment = BoxContainer.ALIGNMENT_CENTER
-	var lm := _etichetta("Mappa:", 18, true)
+	hm.add_theme_constant_override("separation", 10)
+	var lm := _etichetta("Aspetto del tavolo:", 17)
 	lm.autowrap_mode = TextServer.AUTOWRAP_OFF
 	hm.add_child(lm)
-	var om := OptionButton.new()
-	om.add_item("moderna in rilievo")
-	om.add_item("originale SPI (1980)")
-	om.selected = 0 if plancia.modalita == "moderna" else 1
-	om.item_selected.connect(func(i: int):
-		var mod := "moderna" if i == 0 else "originale"
-		var imp := ConfigFile.new()
-		imp.load("user://impostazioni.cfg")
-		imp.set_value("vista", "mappa", mod)
-		imp.save("user://impostazioni.cfg")
-		plancia.imposta_mappa(mod))
-	hm.add_child(om)
+	_interruttori(hm)
 	v.add_child(hm)
-	var n := _etichetta("Versione digitale per uso personale. Mappa originale e pedine dal modulo TTS, mappa moderna dipinta con ChatGPT, miniature 3D create con Meshy.", 14, false, Color(INCHIOSTRO, 0.7))
+	var n := _etichetta("Versione digitale per uso personale. Mappa e pedine originali dal modulo TTS, mappa a rilievo dipinta con ChatGPT, miniature 3D create con Meshy.", 14, false, Color(INCHIOSTRO, 0.7))
 	n.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	v.add_child(n)
 
@@ -307,24 +486,100 @@ func _impostazioni_locali() -> void:
 		_inizia({"giocatori": gioc, "seme": randi() % 1000000000}, [])))
 	v.add_child(h2)
 
+
 func _mostra_regole() -> void:
-	var v := _schermo_centrale(860)
-	v.add_child(_etichetta("Regole di Barbarian Kings", 28, true))
+	_libro(0)
+
+## Il libro "Come si gioca": capitoli illustrati con le pedine, da sfogliare.
+func _libro(cap: int) -> void:
+	var capitoli := Tutorial.capitoli()
+	cap = clampi(cap, 0, capitoli.size() - 1)
+	_pulisci_ui()
+	var fondo := ColorRect.new()
+	fondo.color = Color(0.05, 0.03, 0.02, 0.6)
+	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	radice_ui.add_child(fondo)
+	var pc := PanelContainer.new()
+	pc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	pc.offset_left = 40
+	pc.offset_right = -40
+	pc.offset_top = 24
+	pc.offset_bottom = -24
+	pc.add_theme_stylebox_override("panel", _stile_tex("pagina", 40, 46, 34))
+	radice_ui.add_child(pc)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 22)
+	pc.add_child(h)
+	# indice dei capitoli
+	var indice := VBoxContainer.new()
+	indice.custom_minimum_size = Vector2(250, 0)
+	indice.add_theme_constant_override("separation", 3)
+	h.add_child(indice)
+	var lt := _etichetta("Come si gioca", 30, true)
+	indice.add_child(lt)
+	_divisore(indice)
+	for i in capitoli.size():
+		var b := Button.new()
+		b.text = "%d. %s" % [i + 1, capitoli[i]["titolo"]]
+		b.flat = true
+		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.add_theme_font_override("font", font_testo)
+		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_constant_override("outline_size", 0)
+		b.add_theme_color_override("font_color", ROSSO_TITOLO if i == cap else INCHIOSTRO)
+		b.add_theme_color_override("font_hover_color", ROSSO_TITOLO)
+		b.add_theme_color_override("font_pressed_color", ROSSO_TITOLO)
+		b.add_theme_color_override("font_focus_color", INCHIOSTRO)
+		if i == cap:
+			b.add_theme_font_override("font", font_bottone)
+		b.pressed.connect(_libro.bind(i))
+		indice.add_child(b)
+	var sp := Control.new()
+	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	indice.add_child(sp)
+	indice.add_child(_veste(_bottone("Gioca la partita guidata", _avvia_tutorial, 16), "verde") if m == null else Control.new())
+	indice.add_child(_bottone("Chiudi il libro", (func(): _menu()) if m == null else _chiudi_sovrapposto, 17))
+	# pagina
+	var dx := VBoxContainer.new()
+	dx.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h.add_child(dx)
+	var tit := _etichetta(capitoli[cap]["titolo"], 34, true)
+	dx.add_child(tit)
+	_divisore(dx)
 	var sc := ScrollContainer.new()
-	sc.custom_minimum_size = Vector2(820, 560)
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	v.add_child(sc)
+	dx.add_child(sc)
 	var r := RichTextLabel.new()
 	r.bbcode_enabled = true
 	r.fit_content = true
-	r.custom_minimum_size = Vector2(800, 0)
-	r.text = Regole.testo()
+	r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r.add_theme_font_size_override("normal_font_size", 18)
+	r.add_theme_font_size_override("italics_font_size", 18)
+	r.add_theme_font_size_override("bold_font_size", 17)
+	r.add_theme_constant_override("line_separation", 3)
+	r.text = capitoli[cap]["testo"]
 	sc.add_child(r)
-	v.add_child(_bottone("Chiudi", (func(): _menu()) if m == null else _chiudi_sovrapposto))
+	var nav := HBoxContainer.new()
+	nav.add_theme_constant_override("separation", 10)
+	var bp := _veste(_bottone("Pagina precedente", _libro.bind(cap - 1), 16), "secondario")
+	bp.disabled = cap == 0
+	nav.add_child(bp)
+	var num := _etichetta("pagina %d di %d" % [cap + 1, capitoli.size()], 16, false, BORDO)
+	num.add_theme_font_override("font", font_corsivo)
+	num.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	num.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	nav.add_child(num)
+	var bn := _bottone("Pagina seguente", _libro.bind(cap + 1), 16)
+	bn.disabled = cap == capitoli.size() - 1
+	nav.add_child(bn)
+	dx.add_child(nav)
 
 func _chiudi_sovrapposto() -> void:
 	_costruisci_gioco()
 	_aggiorna_tutto()
+	_chiave_pannello = ""
+	_passo()
 
 # ---------------------------------------------------------------- partita
 
@@ -349,95 +604,201 @@ func _inizia(c: Dictionary, decisioni: Array) -> void:
 
 func _costruisci_gioco() -> void:
 	_pulisci_ui()
-	# barra in alto
+	# barra in alto: cuoio scuro con i re in gara
 	var top := PanelContainer.new()
 	top.set_anchors_preset(Control.PRESET_TOP_WIDE)
-	top.offset_bottom = 54
+	top.offset_bottom = 60
+	top.add_theme_stylebox_override("panel", _stile_tex("barra", 6, 12, 4))
 	radice_ui.add_child(top)
 	barra = HBoxContainer.new()
-	barra.add_theme_constant_override("separation", 14)
+	barra.add_theme_constant_override("separation", 12)
 	top.add_child(barra)
-	var lg := TextureRect.new()
-	lg.texture = load("res://assets/img/logo.png")
-	lg.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	lg.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	lg.custom_minimum_size = Vector2(70, 40)
+	var lg := _etichetta("Barbarian Kings", 24, true, ORO)
+	lg.autowrap_mode = TextServer.AUTOWRAP_OFF
+	lg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	lg.add_theme_color_override("font_outline_color", Color(0.1, 0.04, 0.0))
+	lg.add_theme_constant_override("outline_size", 4)
 	barra.add_child(lg)
-	etichetta_fase = _etichetta("", 20, true)
-	etichetta_fase.autowrap_mode = TextServer.AUTOWRAP_OFF
-	barra.add_child(etichetta_fase)
 	box_giocatori = HBoxContainer.new()
-	box_giocatori.add_theme_constant_override("separation", 10)
+	box_giocatori.add_theme_constant_override("separation", 16)
 	box_giocatori.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	barra.add_child(box_giocatori)
+	_interruttori(barra, 15)
 	var mb := MenuButton.new()
 	mb.text = "Menu"
-	mb.add_theme_font_override("font", font_titolo)
-	mb.add_theme_color_override("font_color", INCHIOSTRO)
-	mb.add_theme_stylebox_override("normal", _stile(GIALLO, BORDO, 2, 5, 10))
-	mb.add_theme_stylebox_override("hover", _stile(GIALLO.lightened(0.2), BORDO, 2, 5, 10))
+	mb.flat = false
+	mb.add_theme_font_size_override("font_size", 16)
 	var pm := mb.get_popup()
-	pm.add_item("Velocità animazioni: normale", 1)
-	pm.add_item("Velocità animazioni: doppia", 2)
-	pm.add_item("Velocità animazioni: quadrupla", 4)
+	pm.add_item("Animazioni a velocità normale", 1)
+	pm.add_item("Animazioni a velocità doppia", 2)
+	pm.add_item("Animazioni a velocità quadrupla", 4)
 	pm.add_separator()
 	pm.add_check_item("Colora le province per proprietario", 10)
 	pm.add_item("Riporta la telecamera alla vista iniziale", 11)
-	pm.add_item("Mappa moderna in rilievo", 13)
-	pm.add_item("Mappa originale SPI (1980)", 14)
-	pm.add_item("Mostra o nascondi il diario", 12)
 	pm.add_separator()
 	pm.add_item("Salva la partita", 20)
 	pm.add_item("Salva nel cloud (Firebase)", 21)
-	pm.add_item("Regole", 22)
+	pm.add_item("Come si gioca (libro delle regole)", 22)
 	pm.add_item("Torna al menu principale", 23)
 	pm.id_pressed.connect(_voce_menu.bind(pm))
 	barra.add_child(mb)
-	# pannello delle decisioni a destra
+	# fascia delle fasi dell'anno
+	var fc := CenterContainer.new()
+	fc.anchor_right = 1.0
+	fc.offset_left = 8
+	fc.offset_right = -440
+	fc.offset_top = 64
+	fc.offset_bottom = 98
+	fc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	radice_ui.add_child(fc)
+	fascia_fasi = HBoxContainer.new()
+	fascia_fasi.add_theme_constant_override("separation", 4)
+	fc.add_child(fascia_fasi)
+	# pannello delle decisioni a destra: intestazione, contenuto che scorre, piede fisso
 	pannello = PanelContainer.new()
 	pannello.anchor_left = 1.0
 	pannello.anchor_right = 1.0
-	pannello.anchor_top = 0.0
 	pannello.anchor_bottom = 1.0
-	pannello.offset_left = -420
-	pannello.offset_right = -8
-	pannello.offset_top = 62
-	pannello.offset_bottom = -8
+	pannello.offset_left = -432
+	pannello.offset_right = -6
+	pannello.offset_top = 64
+	pannello.offset_bottom = -6
 	radice_ui.add_child(pannello)
+	var colonna := VBoxContainer.new()
+	colonna.add_theme_constant_override("separation", 6)
+	pannello.add_child(colonna)
+	titolo_pannello = RichTextLabel.new()
+	titolo_pannello.bbcode_enabled = true
+	titolo_pannello.fit_content = true
+	titolo_pannello.scroll_active = false
+	titolo_pannello.add_theme_font_override("normal_font", font_titolo)
+	titolo_pannello.add_theme_font_override("bold_font", font_titolo)
+	titolo_pannello.add_theme_font_size_override("normal_font_size", 27)
+	titolo_pannello.add_theme_font_size_override("bold_font_size", 27)
+	titolo_pannello.add_theme_color_override("default_color", ROSSO_TITOLO)
+	colonna.add_child(titolo_pannello)
+	spiega_pannello = _etichetta("", 16, false, Color(INCHIOSTRO, 0.85))
+	spiega_pannello.add_theme_font_override("font", font_corsivo)
+	colonna.add_child(spiega_pannello)
+	_divisore(colonna)
 	var sc := ScrollContainer.new()
 	sc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	pannello.add_child(sc)
+	sc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	colonna.add_child(sc)
 	contenuto = VBoxContainer.new()
 	contenuto.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	contenuto.add_theme_constant_override("separation", 8)
 	sc.add_child(contenuto)
-	# informazioni sulla provincia a sinistra
+	_divisore(colonna)
+	piede = HBoxContainer.new()
+	piede.add_theme_constant_override("separation", 8)
+	colonna.add_child(piede)
+	btn_saggio = _veste(_bottone("Consiglio", func(): _consiglio(giocatore_ui), 16), "secondario")
+	btn_saggio.icon = _icona_saggio()
+	btn_saggio.expand_icon = false
+	btn_saggio.tooltip_text = "Il Saggio suggerisce una mossa e ti spiega perché."
+	piede.add_child(btn_saggio)
+	btn_conferma = _veste(_bottone("Conferma", func():
+		if _azione_conferma.is_valid():
+			_azione_conferma.call(), 19), "verde")
+	btn_conferma.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn_conferma.custom_minimum_size = Vector2(0, 48)
+	piede.add_child(btn_conferma)
+	piede.visible = false
+	# scheda della provincia sotto il mouse, a sinistra
 	info = PanelContainer.new()
-	info.position = Vector2(8, 62)
-	info.custom_minimum_size = Vector2(330, 0)
+	info.position = Vector2(8, 102)
+	info.custom_minimum_size = Vector2(340, 0)
 	info.visible = false
+	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	radice_ui.add_child(info)
 	info_testo = RichTextLabel.new()
 	info_testo.bbcode_enabled = true
 	info_testo.fit_content = true
-	info_testo.custom_minimum_size = Vector2(320, 0)
+	info_testo.custom_minimum_size = Vector2(300, 0)
+	info_testo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_testo.add_theme_font_size_override("normal_font_size", 16)
 	info.add_child(info_testo)
-	# diario in basso a sinistra
+	# cronaca dell'anno in basso a sinistra, comprimibile
 	diario_box = PanelContainer.new()
 	diario_box.anchor_top = 1.0
 	diario_box.anchor_bottom = 1.0
-	diario_box.offset_left = 8
-	diario_box.offset_right = 520
-	diario_box.offset_top = -190
-	diario_box.offset_bottom = -8
-	diario_box.add_theme_stylebox_override("panel", _stile(Color(CARTA, 0.88), BORDO, 2, 6, 8))
+	diario_box.offset_left = 6
+	diario_box.offset_right = 500
+	diario_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	diario_box.offset_bottom = -6
+	diario_box.add_theme_stylebox_override("panel", _stile_tex("pergamena_scura", 26, 16, 12))
 	radice_ui.add_child(diario_box)
+	var dv := VBoxContainer.new()
+	diario_box.add_child(dv)
+	var dh := HBoxContainer.new()
+	dv.add_child(dh)
+	var dt := _etichetta("Cronaca", 18, true)
+	dt.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	dh.add_child(dt)
+	var db := _veste(_bottone("Nascondi", func(): pass, 13), "secondario")
+	db.custom_minimum_size = Vector2(90, 0)
+	dh.add_child(db)
+	diario_corpo = MarginContainer.new()
+	diario_corpo.custom_minimum_size = Vector2(0, 130)
+	dv.add_child(diario_corpo)
 	diario = RichTextLabel.new()
 	diario.bbcode_enabled = true
 	diario.scroll_following = true
 	diario.add_theme_font_size_override("normal_font_size", 15)
-	diario_box.add_child(diario)
+	diario.add_theme_font_size_override("bold_font_size", 14)
+	diario_corpo.add_child(diario)
+	db.pressed.connect(func():
+		diario_corpo.visible = not diario_corpo.visible
+		db.text = "Nascondi" if diario_corpo.visible else "Mostra"
+		diario_box.offset_top = diario_box.offset_bottom)
+	diario_box.offset_top = diario_box.offset_bottom
+	# fumetto del Saggio (consigli e partita guidata)
+	saggio_box = PanelContainer.new()
+	saggio_box.anchor_top = 1.0
+	saggio_box.anchor_bottom = 1.0
+	saggio_box.anchor_right = 1.0
+	saggio_box.offset_left = 354
+	saggio_box.offset_right = -440
+	saggio_box.offset_bottom = -6
+	saggio_box.grow_vertical = Control.GROW_DIRECTION_BEGIN
+	saggio_box.visible = false
+	saggio_box.add_theme_stylebox_override("panel", _stile_tex("pergamena", 26, 18, 14))
+	radice_ui.add_child(saggio_box)
+	var sh := HBoxContainer.new()
+	sh.add_theme_constant_override("separation", 12)
+	saggio_box.add_child(sh)
+	var ritr := TextureRect.new()
+	ritr.texture = _tex("saggio")
+	ritr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	ritr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	ritr.custom_minimum_size = Vector2(96, 96)
+	ritr.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	sh.add_child(ritr)
+	var sv := VBoxContainer.new()
+	sv.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sh.add_child(sv)
+	sv.add_child(_etichetta("Il Saggio", 22, true))
+	saggio_testo = RichTextLabel.new()
+	saggio_testo.bbcode_enabled = true
+	saggio_testo.fit_content = true
+	saggio_testo.custom_minimum_size = Vector2(320, 0)
+	saggio_testo.add_theme_font_size_override("normal_font_size", 17)
+	saggio_testo.add_theme_font_size_override("italics_font_size", 17)
+	sv.add_child(saggio_testo)
+	saggio_bottoni = HBoxContainer.new()
+	saggio_bottoni.alignment = BoxContainer.ALIGNMENT_END
+	saggio_bottoni.add_theme_constant_override("separation", 8)
+	sv.add_child(saggio_bottoni)
 	_riempi_diario()
+
+var _icona_s: Texture2D
+func _icona_saggio() -> Texture2D:
+	if _icona_s == null:
+		var img: Image = _tex("saggio").get_image()
+		img.resize(28, 28, Image.INTERPOLATE_LANCZOS)
+		_icona_s = ImageTexture.create_from_image(img)
+	return _icona_s
 
 func _voce_menu(id: int, pm: PopupMenu) -> void:
 	match id:
@@ -450,24 +811,16 @@ func _voce_menu(id: int, pm: PopupMenu) -> void:
 			plancia.tinta_controllo(pm.is_item_checked(i))
 		11:
 			plancia.vista_iniziale()
-		12:
-			diario_box.visible = not diario_box.visible
-		13, 14:
-			var mod := "moderna" if id == 13 else "originale"
-			var imp := ConfigFile.new()
-			imp.load("user://impostazioni.cfg")
-			imp.set_value("vista", "mappa", mod)
-			imp.save("user://impostazioni.cfg")
-			plancia.imposta_mappa(mod)
 		20:
 			_salva_locale()
 		21:
 			_salva_cloud()
 		22:
-			_mostra_regole()
+			_libro(0)
 		23:
 			m = null
 			online = false
+			tutorial = false
 			_menu()
 
 func _riempi_diario() -> void:
@@ -477,34 +830,102 @@ func _riempi_diario() -> void:
 	var t := ""
 	for r in righe:
 		if r.begins_with("---"):
-			t += "\n[b]" + r + "[/b]\n"
+			t += "\n[b]" + r.replace("-", " ").strip_edges() + "[/b]\n"
 		else:
 			t += r + "\n"
 	diario.text = t
 
+## Fase del motore -> voce della fascia in alto.
+func _gruppo_fase(f: String) -> String:
+	match f:
+		"province", "re": return "Preparativi"
+		"alleanze": return "Alleanze"
+		"tornado", "finanze": return "Finanze"
+		"acquisti": return "Reclute"
+		"magia1", "chiaro", "rivela", "magia3": return "Magia"
+		"piano": return "Movimento"
+		"battaglia": return "Battaglia"
+	return ""
+
 func _aggiorna_tutto() -> void:
-	if m == null or etichetta_fase == null:
+	if m == null or box_giocatori == null or not is_instance_valid(box_giocatori):
 		return
-	etichetta_fase.text = ("Anno %d - " % m.turno if m.turno > 0 else "") + m.descr_fase()
+	# i re in gara
 	for c in box_giocatori.get_children():
 		c.queue_free()
 	for p in m.n:
 		var h := HBoxContainer.new()
-		var chip := ColorRect.new()
-		chip.color = Dati.COLORI_RGB[p]
-		chip.custom_minimum_size = Vector2(16, 16)
-		h.add_child(chip)
+		h.add_theme_constant_override("separation", 6)
+		var sc := TextureRect.new()
+		sc.texture = _tex("scudo_%d" % p)
+		sc.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		sc.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+		sc.custom_minimum_size = Vector2(32, 40)
+		h.add_child(sc)
+		var v := VBoxContainer.new()
+		v.add_theme_constant_override("separation", 1)
+		h.add_child(v)
+		var attesa: bool = p in m.attese and not m.finita
+		var nome := _etichetta(m.g[p]["nome"], 15, false, ORO if attesa else CREMA)
+		nome.add_theme_font_override("font", font_bottone)
+		nome.autowrap_mode = TextServer.AUTOWRAP_OFF
+		nome.add_theme_color_override("font_outline_color", Color(0.1, 0.04, 0.0))
+		nome.add_theme_constant_override("outline_size", 3)
+		v.add_child(nome)
+		var r := HBoxContainer.new()
+		r.add_theme_constant_override("separation", 4)
+		v.add_child(r)
 		var t := m.tasse_di(p)
-		var att := "  ..." if p in m.attese else ""
-		var l := _etichetta("%s  %d/%d  %d seq.%s" % [m.g[p]["nome"], t, m.soglia, m.g[p]["tesoro"], att], 16)
-		l.autowrap_mode = TextServer.AUTOWRAP_OFF
-		l.tooltip_text = "Tasse controllate %d su %d per vincere; tesoro %d sequin" % [t, m.soglia, m.g[p]["tesoro"]]
-		l.mouse_filter = Control.MOUSE_FILTER_PASS
-		h.add_child(l)
+		var pb := ProgressBar.new()
+		pb.max_value = m.soglia
+		pb.value = t
+		pb.show_percentage = false
+		pb.custom_minimum_size = Vector2(70, 9)
+		pb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		r.add_child(pb)
+		var mo := TextureRect.new()
+		mo.texture = _tex("moneta")
+		mo.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		mo.custom_minimum_size = Vector2(16, 16)
+		r.add_child(mo)
+		var ts := _etichetta(str(m.g[p]["tesoro"]), 14, false, CREMA)
+		ts.autowrap_mode = TextServer.AUTOWRAP_OFF
+		r.add_child(ts)
+		h.tooltip_text = "%s\nTasse delle province controllate: %d su %d per vincere\nTesoro: %d sequin%s" % [m.g[p]["nome"], t, m.soglia, m.g[p]["tesoro"], "\nSta decidendo..." if attesa else ""]
+		h.mouse_filter = Control.MOUSE_FILTER_PASS
 		box_giocatori.add_child(h)
+	# fascia delle fasi
+	for c in fascia_fasi.get_children():
+		c.queue_free()
+	var voci := ["Preparativi"] if m.turno == 0 else (["Alleanze"] if m.n >= 3 else []) + ["Finanze", "Reclute", "Magia", "Movimento", "Battaglia"]
+	var corrente := _gruppo_fase(m.fase)
+	fascia_fasi.add_child(_pillola("Anno %d" % m.turno if m.turno > 0 else "Inizio", false, true))
+	for vce in voci:
+		fascia_fasi.add_child(_pillola(vce, vce == corrente))
 	_riempi_diario()
 	if _prov_info > 0:
 		_mostra_info(_prov_info)
+
+func _pillola(testo: String, attiva: bool, scura := false) -> PanelContainer:
+	var pc := PanelContainer.new()
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	if scura:
+		pc.add_theme_stylebox_override("panel", _stile(Color(0.16, 0.08, 0.03, 0.88), Color(0.8, 0.62, 0.28), 1, 12, 12))
+		attiva = true
+	elif attiva:
+		pc.add_theme_stylebox_override("panel", _stile_bottone("bottone"))
+	else:
+		var s := _stile(Color(0.95, 0.89, 0.74, 0.82), Color(0.45, 0.3, 0.14, 0.8), 1, 12, 12)
+		s.shadow_size = 1
+		pc.add_theme_stylebox_override("panel", s)
+	var l := _etichetta(testo, 15, false, CREMA if attiva else Color(INCHIOSTRO, 0.75))
+	l.add_theme_font_override("font", font_bottone)
+	l.autowrap_mode = TextServer.AUTOWRAP_OFF
+	if attiva:
+		l.add_theme_color_override("font_outline_color", Color(0.16, 0.06, 0.02))
+		l.add_theme_constant_override("outline_size", 3)
+	pc.add_child(l)
+	return pc
 
 # ---------------------------------------------------------------- ciclo di gioco
 
@@ -517,6 +938,8 @@ func _passo() -> void:
 		ev_letti = m.eventi.size()
 		plancia.accoda(nuovi)
 		_aggiorna_tutto()
+		if tutorial:
+			_guida_eventi(nuovi)
 		return
 	if plancia.occupata() or (online and _in_corso):
 		return
@@ -538,6 +961,10 @@ func _passo() -> void:
 	_mostra_attesa()
 
 func _dopo_regia() -> void:
+	if _cambio_pendente.is_valid():
+		var c := _cambio_pendente
+		_cambio_pendente = Callable()
+		c.call()
 	call_deferred("_passo")
 
 func _prossimo_umano() -> int:
@@ -558,6 +985,8 @@ func _prossimo_umano() -> int:
 	return cand[0]
 
 func _applica(p: int, d: Dictionary) -> void:
+	if _saggio_modo in ["consiglio", "guida"] and p == giocatore_ui and saggio_box != null and is_instance_valid(saggio_box) and saggio_box.visible:
+		_chiudi_saggio()
 	if online:
 		_invia_online(p, d)
 		return
@@ -578,9 +1007,11 @@ func _avviso(t: String) -> void:
 func _mostra_attesa() -> void:
 	_chiave_pannello = ""
 	_svuota_pannello()
-	var chi := ", ".join(m.attese.map(func(p): return m.g[p]["nome"]))
-	contenuto.add_child(_etichetta(m.descr_fase(), 22, true))
-	contenuto.add_child(_etichetta("In attesa di: " + chi, 17))
+	titolo_pannello.text = m.descr_fase()
+	var chi := ", ".join(m.attese.map(func(p): return _nome_colore(p)))
+	contenuto.add_child(_rtl("In attesa di: " + chi))
+	if plancia.occupata():
+		contenuto.add_child(_etichetta("Gli eserciti si muovono sulla mappa...", 16, false, BORDO))
 	plancia.evidenzia({})
 	plancia.disegna_percorsi([])
 
@@ -588,6 +1019,11 @@ func _svuota_pannello() -> void:
 	for c in contenuto.get_children():
 		c.queue_free()
 	click_mode = Callable()
+	titolo_pannello.text = ""
+	spiega_pannello.text = ""
+	spiega_pannello.visible = false
+	piede.visible = false
+	_azione_conferma = Callable()
 
 ## Prima di una decisione segreta, se a questo dispositivo giocano più persone, si copre lo schermo.
 func _chiedi(p: int) -> void:
@@ -637,7 +1073,7 @@ func _copri(p: int) -> void:
 func _vittoria() -> void:
 	_svuota_pannello()
 	var p := m.vincitore
-	contenuto.add_child(_etichetta("La Pace del Re", 26, true))
+	titolo_pannello.text = "La Pace del Re"
 	contenuto.add_child(_rtl("%s controlla province per %d sequin di tasse e mette fine all'Età Rossa di Castafon dopo %d anni." % [_nome_colore(p), m.tasse_di(p), m.turno - 1]))
 	for q in m.n:
 		contenuto.add_child(_rtl("%s: tasse %d, tesoro %d" % [_nome_colore(q), m.tasse_di(q), m.g[q]["tesoro"]]))
@@ -659,14 +1095,14 @@ func _su_sopra_provincia(q: int) -> void:
 		_mostra_info(q)
 
 func _mostra_info(q: int) -> void:
-	if m == null or info == null or q <= 0:
+	if m == null or info == null or not is_instance_valid(info) or q <= 0:
 		return
 	_prov_info = q
 	var pr: Dictionary = Dati.province[q]
-	var t := "[b]%s[/b]\n" % Dati.nome_prov(q)
-	t += "Tasse [b]%d[/b]   %s" % [pr["tasse"], Dati.TERRENI[pr["terreno"]]]
+	var t := "[font_size=24][color=#%s][font=res://assets/font/PirataOne.ttf]%s[/font][/color][/font_size]\n" % [_hex(ROSSO_TITOLO), Dati.nome_prov(q)]
+	t += "[img=16x16]res://assets/ui/moneta.png[/img] tasse [b]%d[/b]   %s" % [pr["tasse"], Dati.TERRENI[pr["terreno"]]]
 	if pr["nativi"] != "":
-		t += "   popolo: %s" % Dati.NATIVI[pr["nativi"]]
+		t += "   popolo [i]%s[/i]" % Dati.NATIVI[pr["nativi"]]
 	t += "\nControllo: %s" % (_nome_colore(m.ctrl[q]) if m.ctrl[q] >= 0 else "nessuno")
 	if q in m.tornado:
 		t += "\n[i]Un tornado devasta la provincia.[/i]"
@@ -688,11 +1124,35 @@ func _mostra_info(q: int) -> void:
 	for o in per_own:
 		var ids: Array = per_own[o]
 		var forza := m.forza_effettiva(ids.filter(func(id): return Dati.is_militare(id)), q)
-		t += "\n\n%s - forza %d" % [_nome_colore(o), forza]
+		t += "\n\n%s  -  forza [b]%d[/b]\n" % [_nome_colore(o), forza]
+		var righe := []
+		var gruppi := {}
+		var ordine := []
 		for id in ids:
-			t += "\n  " + _descr_unita(id, o == spett)
+			var s0: Dictionary = m.u[id]
+			if Dati.is_militare(id) and not s0["zombie"] and s0["catt"] == -9 and not (o == spett and (s0["illus"] or s0["invis"])):
+				var k := "%s (F%d M%d)" % [Dati.nome_tipo(id), Dati.unita[id]["forza"], Dati.unita[id]["mov"]]
+				if not gruppi.has(k):
+					gruppi[k] = 0
+					ordine.append(k)
+				gruppi[k] += 1
+			else:
+				righe.append(_descr_unita(id, o == spett))
+		for k in ordine:
+			righe.append(("%d x " % gruppi[k] if gruppi[k] > 1 else "") + k)
+		# le pedine originali in fila, poi la descrizione
+		for id in ids:
+			t += _img_pedina(id, 34)
+		t += "\n[font_size=14]" + "\n".join(righe) + "[/font_size]"
 	info_testo.text = t
 	info.visible = true
+	info.reset_size()
+
+func _img_pedina(id: int, lato := 34) -> String:
+	var perc := "res://assets/img/pedine_colore/%03d.png" % id
+	if not ResourceLoader.exists(perc):
+		return ""
+	return "[img=%dx%d]%s[/img] " % [lato, lato, perc]
 
 func _descr_unita(id: int, mio: bool) -> String:
 	var d: Dictionary = Dati.unita[id]
@@ -722,16 +1182,16 @@ func _descr_unita(id: int, mio: bool) -> String:
 
 func _intestazione(p: int, titolo: String, spiega: String) -> void:
 	_svuota_pannello()
-	contenuto.add_child(_rtl("%s  -  [b]%s[/b]" % [_nome_colore(p), titolo], 19))
-	if spiega != "":
-		var l := _etichetta(spiega, 16)
-		l.add_theme_font_override("font", font_corsivo)
-		contenuto.add_child(l)
+	titolo_pannello.text = "[img=30x36]res://assets/ui/scudo_%d.png[/img] %s" % [p, titolo]
+	titolo_pannello.tooltip_text = "Decide " + m.g[p]["nome"]
+	spiega_pannello.text = spiega
+	spiega_pannello.visible = spiega != ""
 
+## Il pulsante principale, sempre in fondo al pannello, accanto al consiglio del Saggio.
 func _conferma(testo: String, f: Callable) -> void:
-	var b := _bottone(testo, f, 20)
-	b.custom_minimum_size = Vector2(0, 44)
-	contenuto.add_child(b)
+	btn_conferma.text = testo
+	_azione_conferma = f
+	piede.visible = true
 
 func _pannello_fase(p: int) -> void:
 	st = {"p": p}
@@ -751,6 +1211,8 @@ func _pannello_fase(p: int) -> void:
 		"battaglia": _p_battaglia(p)
 		"magia3": _p_magia3(p)
 		_: _mostra_attesa()
+	if tutorial:
+		_guida_fase(p)
 
 const C_LIBERA := Color(0.95, 0.85, 0.3, 0.45)
 const C_SCELTA := Color(0.95, 0.25, 0.1, 0.6)
@@ -1070,7 +1532,8 @@ func _p_acquisti(p: int) -> void:
 		if m.militari_in(q, Motore.NEUTRALE).is_empty():
 			mie[q] = C_MIA
 	plancia.evidenzia(mie)
-	var soldi := _etichetta("", 19, true)
+	var soldi := _etichetta("", 16, false, BORDO)
+	soldi.add_theme_font_override("font", font_bottone)
 	contenuto.add_child(soldi)
 	var illus_cb := CheckBox.new()
 	illus_cb.text = "Unità illusorie (1 sequin l'una, serve riuscire l'incantesimo)"
@@ -1103,7 +1566,7 @@ func _p_acquisti(p: int) -> void:
 				if st["prov"] > 0:
 					st["riempi"].call(st["prov"]), 14))
 			carrello.add_child(h)
-		soldi.text = "Tesoro %d - spesa %d = %d   (mantenimento futuro %d, tasse %d)" % [m.g[p]["tesoro"], spesa.call(), m.g[p]["tesoro"] - spesa.call(), mant, m.tasse_di(p)]
+		soldi.text = "Tesoro %d - spesa %d = %d\nMantenimento futuro %d, tasse %d" % [m.g[p]["tesoro"], spesa.call(), m.g[p]["tesoro"] - spesa.call(), mant, m.tasse_di(p)]
 	st["riempi"] = func(q: int):
 		for c in negozio.get_children():
 			c.queue_free()
@@ -1135,8 +1598,8 @@ func _p_acquisti(p: int) -> void:
 			var h := HBoxContainer.new()
 			var ic := TextureRect.new()
 			var nome_ic := "%03d" % id0
-			ic.texture = load("res://assets/img/pedine/%s.png" % nome_ic) if ResourceLoader.exists("res://assets/img/pedine/%s.png" % nome_ic) else null
-			ic.custom_minimum_size = Vector2(40, 40)
+			ic.texture = load("res://assets/img/pedine_colore/%s.png" % nome_ic) if ResourceLoader.exists("res://assets/img/pedine_colore/%s.png" % nome_ic) else null
+			ic.custom_minimum_size = Vector2(46, 46)
 			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			h.add_child(ic)
@@ -1152,9 +1615,13 @@ func _p_acquisti(p: int) -> void:
 				var lista: Array = Dati.ABILITA_EROE if dd["tipo"] == "eroe" else Dati.RAMI
 				for a in lista:
 					ab_ob.add_item(Dati.NOMI_ABILITA[a])
-				ab_ob.add_theme_font_size_override("font_size", 14)
+				ab_ob.add_theme_font_size_override("font_size", 13)
+				ab_ob.fit_to_longest_item = false
+				ab_ob.clip_text = true
+				ab_ob.custom_minimum_size = Vector2(118, 0)
+				ab_ob.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				h.add_child(ab_ob)
-			h.add_child(_bottone("Recluta", func():
+			var br := _bottone("Recluta", func():
 				var il := illus_cb.button_pressed
 				var costo: int = 1 if il else dd["costo"]
 				if spesa.call() + costo > m.g[p]["tesoro"]:
@@ -1165,7 +1632,9 @@ func _p_acquisti(p: int) -> void:
 					c["abil"] = [lista2[ab_ob.selected]]
 				st["carrello"].append(c)
 				st["agg"].call()
-				st["riempi"].call(q), 15))
+				st["riempi"].call(q), 15)
+			br.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+			h.add_child(br)
 			negozio.add_child(h)
 	click_mode = func(q: int):
 		if not mie.has(q):
@@ -1227,7 +1696,7 @@ func _p_battaglia(p: int) -> void:
 		var loro := m.forza_effettiva(m.forza_di_lato(q, l), q)
 		var cb := CheckBox.new()
 		var tat := m._max_abil(m._capi_lato(q, l), "tattica")
-		cb.text = "Attacca %s (forza %d%s)" % [_nome_g(l), loro, ", tattica %d" % tat if tat > 0 else ""]
+		cb.text = "Attacca %s (forza %d%s): %s" % [_nome_g(l), loro, ", tattica %d" % tat if tat > 0 else "", _rapporto(mia, loro)]
 		cb.button_pressed = mia >= loro
 		contenuto.add_child(cb)
 		cbs[l] = cb
@@ -1304,7 +1773,7 @@ func _lista_capi(p: int) -> void:
 		var b := _bottone(t, func(): _seleziona_capo(p, id), 15)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		if id == st["sel"]:
-			b.add_theme_stylebox_override("normal", _stile(GIALLO.lightened(0.35), Color(0.7, 0.15, 0.05), 3, 5, 10))
+			_veste(b, "verde")
 		lista.add_child(b)
 
 func _impegnate(p: int, tranne: int) -> Dictionary:
@@ -1458,6 +1927,8 @@ func _riprendi(d) -> void:
 		gioc.append({"nome": str(gc["nome"]), "ia": bool(gc["ia"])})
 	c["giocatori"] = gioc
 	c["seme"] = int(c["seme"])
+	tutorial = bool(c.get("tutorial", false))
+	tut_visti = {"intro": true}
 	_inizia(c, d.get("dec", []))
 
 func _salva_cloud() -> void:
@@ -1665,3 +2136,237 @@ func _ciclo_online() -> void:
 		if not plancia.occupata() and not _in_corso:
 			_passo()
 		rete.heartbeat(codice, maxi(0, posto_stanza))
+
+# ---------------------------------------------------------------- il Saggio: consigli e partita guidata
+
+var _saggio_pagine: Array = []
+var _saggio_finale: Array = []
+var _saggio_consiglio := false   # il fumetto aperto è un consiglio (si chiude quando decidi)
+var _saggio_modo := ""
+
+## Mostra il fumetto del Saggio. pagine: testi da sfogliare; finale: pulsanti [testo, callable, aspetto]
+## dell'ultima pagina. modo: "consiglio" (si chiude quando decidi), "guida" (spiegazione di una fase:
+## sostituisce le spiegazioni vecchie ma lascia finire i commenti agli eventi), "evento" (si accoda).
+func _saggio(pagine: Array, finale: Array = [], modo := "consiglio") -> void:
+	if saggio_box == null or not is_instance_valid(saggio_box) or pagine.is_empty():
+		return
+	var aperto := saggio_box.visible
+	if modo == "evento" and aperto and _saggio_modo != "consiglio":
+		_saggio_pagine += pagine
+	elif modo == "guida" and aperto and _saggio_modo == "evento":
+		_saggio_pagine += pagine
+		_saggio_finale = finale
+		_saggio_modo = "guida"
+	else:
+		_saggio_pagine = pagine.duplicate()
+		_saggio_finale = finale
+		_saggio_modo = modo
+	_saggio_consiglio = _saggio_modo == "consiglio"
+	saggio_box.visible = true
+	diario_box.visible = false
+	_saggio_pagina()
+
+func _saggio_pagina() -> void:
+	saggio_testo.text = _saggio_pagine[0]
+	for c in saggio_bottoni.get_children():
+		c.queue_free()
+	if _saggio_pagine.size() > 1:
+		var n := _etichetta("ancora %d" % (_saggio_pagine.size() - 1), 14, false, BORDO)
+		n.add_theme_font_override("font", font_corsivo)
+		n.autowrap_mode = TextServer.AUTOWRAP_OFF
+		n.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		saggio_bottoni.add_child(n)
+		saggio_bottoni.add_child(_bottone("Avanti", func():
+			_saggio_pagine.pop_front()
+			_saggio_pagina(), 15))
+		var salta := _veste(_bottone("Salta", _chiudi_saggio, 15), "secondario")
+		saggio_bottoni.add_child(salta)
+	else:
+		for f in _saggio_finale:
+			var b := _bottone(f[0], f[1], 15)
+			if f.size() > 2:
+				_veste(b, f[2])
+			saggio_bottoni.add_child(b)
+		if _saggio_finale.is_empty():
+			saggio_bottoni.add_child(_veste(_bottone("Ho capito", _chiudi_saggio, 15), "secondario"))
+	saggio_box.offset_top = saggio_box.offset_bottom
+
+func _chiudi_saggio() -> void:
+	if saggio_box != null and is_instance_valid(saggio_box):
+		saggio_box.visible = false
+		diario_box.visible = true
+
+func _descr_incanto(inc: Dictionary) -> String:
+	var s: String = inc.get("s", "")
+	var t := "%s lancia [i]%s[/i]" % [Dati.nome_unita(int(inc["c"])), Dati.INCANTESIMI[s]["nome"] if Dati.INCANTESIMI.has(s) else s]
+	if inc.has("prov"):
+		t += " su %s" % Dati.nome_prov(int(inc["prov"]))
+	if inc.has("p") and int(inc["p"]) >= 0 and int(inc["p"]) < m.n:
+		t += " contro %s" % _nome_colore(int(inc["p"]))
+	return t
+
+## Descrive a parole la decisione che l'IA prenderebbe al posto del giocatore.
+func _descrivi(p: int, d: Dictionary) -> String:
+	var inc: Array = d.get("incanti", [])
+	var magia := ""
+	if not inc.is_empty():
+		magia = "\n" + "\n".join(inc.map(func(x): return _descr_incanto(x))) + "."
+	match m.fase:
+		"province":
+			var q := int(d.get("prov", 0))
+			if q <= 0:
+				return "Non vedo province libere adatte."
+			var pr: Dictionary = Dati.province[q]
+			var vicine := ""
+			for a in pr["adiacenti"]:
+				if m.ctrl[a] == p:
+					vicine = " È vicina alle tue altre province: potrai difenderle insieme."
+					break
+			return "Prendi [b]%s[/b]: rende [b]%d[/b] sequin di tasse e vi abita il popolo [i]%s[/i], che potrai reclutare.%s" % [Dati.nome_prov(q), pr["tasse"], Dati.NATIVI[pr["nativi"]], vicine]
+		"re":
+			var ab: Array = d.get("abil", [])
+			return "Metti il Re in [b]%s[/b] e dagli: %s." % [Dati.nome_prov(int(d["prov"])), ", ".join(ab.map(func(a): return Dati.NOMI_ABILITA[a]))]
+		"alleanze":
+			var f: Array = d.get("firme", [])
+			if f.is_empty():
+				return "Quest'anno non firmerei con nessuno: gli altri sono troppo vicini o troppo forti." + magia
+			return "Firma con %s: un alleato non ti blocca e combatte con te." % ", ".join(f.map(func(q): return _nome_colore(q))) + magia
+		"finanze":
+			var mt := m.mantenimento(p)
+			if mt <= m.g[p]["tesoro"]:
+				return "Paga tutto: il mantenimento è %d e nel tesoro hai %d sequin. Non c'è bisogno di congedare nessuno." % [mt, m.g[p]["tesoro"]]
+			return "Il mantenimento (%d) supera il tesoro (%d): congeda le unità meno utili, o lo farà il gioco partendo dalle più costose." % [mt, m.g[p]["tesoro"]]
+		"battaglia":
+			var a: Array = d.get("attacca", [])
+			var q := m.provincia_battaglia()
+			var mia := m.forza_effettiva(m.forza_di_lato(q, m.lato(p)), q)
+			if a.is_empty():
+				return "Non attaccare: la tua forza qui è %d e il rischio è troppo alto. Se ti attaccano, ti difenderai comunque." % mia
+			var righe := []
+			for l in a:
+				var loro := m.forza_effettiva(m.forza_di_lato(q, l), q)
+				righe.append("%s (forza %d contro la tua %d, %s)" % [_nome_g(l), loro, mia, _rapporto(mia, loro)])
+			return "Attacca " + ", ".join(righe) + "."
+		"tornado", "magia1", "chiaro", "rivela", "magia3":
+			if inc.is_empty():
+				return "Quest'anno non lancerei nulla in questa fase: conserva sequin e incantatori. Premi pure [b]Conferma[/b]."
+			return "Tenta la sorte:" + magia
+	return "Fai come ti suggerisco." + magia
+
+func _rapporto(a: int, b: int) -> String:
+	if a <= 0 or b <= 0:
+		return "senza confronto"
+	var r := clampi(int(maxi(a, b) / mini(a, b)), 1, 6)
+	return ("%d-1 a tuo favore" if a >= b else "%d-1 contro di te") % r
+
+## Il pulsante Consiglio: l'IA decide per te e il Saggio lo spiega. Nel reclutamento e nel
+## movimento riempie il pannello, così puoi ritoccare prima di confermare.
+func _consiglio(p: int) -> void:
+	if m == null or p < 0 or not (p in m.attese):
+		return
+	var d := IA.decidi(m, p)
+	match m.fase:
+		"acquisti":
+			st["carrello"] = d.get("compra", []).duplicate(true)
+			st["agg"].call()
+			if st["prov"] > 0:
+				st["riempi"].call(st["prov"])
+			var c: Array = st["carrello"]
+			if c.is_empty():
+				_saggio(["Quest'anno non recluterei nessuno: meglio tenere i sequin per il mantenimento. Premi [b]Recluta e paga[/b] lo stesso per passare oltre."])
+			else:
+				var conta := {}
+				var ordine := []
+				for x in c:
+					var k := "%s in %s" % [Dati.nome_tipo(int(x["id"])), Dati.nome_prov(int(x["p"]))]
+					if not conta.has(k):
+						conta[k] = 0
+						ordine.append(k)
+					conta[k] += 1
+				var nomi := ordine.map(func(k): return ("%d x " % conta[k] if conta[k] > 1 else "") + k)
+				_saggio(["Ho preparato l'ordine: " + ", ".join(nomi) + ". Puoi togliere ciò che non ti convince; poi premi [b]Recluta e paga[/b]."])
+		"piano":
+			st["ordini"] = {}
+			for o in d.get("ordini", []):
+				st["ordini"][int(o["capo"])] = {"unita": o["unita"].duplicate(), "via": o["via"].duplicate()}
+			var capi := m.capi_di(p)
+			_lista_capi(p)
+			if not capi.is_empty():
+				_seleziona_capo(p, st["sel"] if st["sel"] in capi else capi[0])
+			var righe := []
+			for o in d.get("ordini", []):
+				if not o["via"].is_empty():
+					righe.append("%s va in %s%s" % [Dati.nome_unita(int(o["capo"])), Dati.nome_prov(int(o["via"][-1])), " con %d unità" % o["unita"].size() if not o["unita"].is_empty() else ""])
+			var t := ("Ecco il mio piano: " + "; ".join(righe) + ". Le frecce sulla mappa mostrano i percorsi.") if not righe.is_empty() else "Quest'anno terrei fermi i tuoi eserciti a difendere le province."
+			var inc: Array = d.get("incanti", [])
+			if not inc.is_empty():
+				t += "\nE poi: " + "; ".join(inc.map(func(x): return _descr_incanto(x))) + "."
+			_saggio([t + " Puoi cambiare gli ordini oppure confermarli così."], [
+				["Conferma il piano del Saggio", func(): _chiudi_saggio(); _applica(p, d), "verde"],
+				["Lo ritocco io", _chiudi_saggio, "secondario"]])
+		_:
+			_saggio([_descrivi(p, d)], [
+				["Segui il consiglio", func(): _chiudi_saggio(); _applica(p, d), "verde"],
+				["Decido io", _chiudi_saggio, "secondario"]])
+
+func _avvia_tutorial() -> void:
+	online = false
+	umani_locali = [0]
+	tutorial = true
+	tut_visti = {}
+	_inizia({"giocatori": [{"nome": "Tu", "ia": false}, {"nome": "Re Baxx", "ia": true}], "seme": 1980, "tutorial": true}, [])
+
+## In partita guidata, il Saggio spiega ogni fase la prima volta in ciascuno dei primi tre anni.
+func _guida_fase(p: int) -> void:
+	if not tutorial or tut_visti.has("fine"):
+		return
+	if m.turno >= 4:
+		tut_visti["fine"] = true
+		_saggio([Tutorial.fine()], [
+			["Continuo la partita", _chiudi_saggio, "verde"],
+			["Torna al menu", func(): m = null; tutorial = false; _menu(), "secondario"]], "guida")
+		return
+	var chiave := "%s|%d" % [m.fase, m.turno]
+	var pagine := []
+	if not tut_visti.has("intro"):
+		tut_visti["intro"] = true
+		pagine += Tutorial.intro()
+	if not tut_visti.has(chiave):
+		tut_visti[chiave] = true
+		pagine += Tutorial.guida(m.fase, m.turno)
+	# suggerimenti concreti per le scelte iniziali
+	if m.fase == "province":
+		var d := IA.decidi(m, p)
+		var q := int(d.get("prov", 0))
+		if q > 0:
+			pagine.append("Ti suggerisco [b]%s[/b] (tasse %d, popolo %s). Cliccala sulla mappa e premi [b]Conferma la provincia[/b]. Il pulsante [b]Consiglio[/b] in basso a destra ti dice sempre cosa farei io." % [Dati.nome_prov(q), Dati.province[q]["tasse"], Dati.NATIVI[Dati.province[q]["nativi"]]])
+	elif m.fase == "battaglia":
+		var q := m.provincia_battaglia()
+		var mia := m.forza_effettiva(m.forza_di_lato(q, m.lato(p)), q)
+		var righe := []
+		for l in m.bersagli_attacco(q, p):
+			var loro := m.forza_effettiva(m.forza_di_lato(q, l), q)
+			righe.append("contro %s (forza %d) saresti a [b]%s[/b]" % [_nome_g(l), loro, _rapporto(mia, loro)])
+		if not righe.is_empty():
+			pagine.append("In %s la tua forza è [b]%d[/b]: %s. La Tattica dei capi può spostare ancora la colonna." % [Dati.nome_prov(q), mia, "; ".join(righe)])
+	if not pagine.is_empty():
+		_saggio(pagine, [], "guida")
+
+## In partita guidata, la prima volta che succede qualcosa di nuovo il Saggio lo commenta.
+func _guida_eventi(nuovi: Array) -> void:
+	if not tutorial or tut_visti.has("fine"):
+		return
+	for e in nuovi:
+		var t: String = e.get("t", "")
+		if tut_visti.has("ev_" + t):
+			continue
+		if t == "battaglia":
+			tut_visti["ev_battaglia"] = true
+			var na: String = "gli indigeni" if int(e["a"]) < 0 else m.g[int(e["a"])]["nome"]
+			var nb: String = "gli indigeni" if int(e["b"]) < 0 else m.g[int(e["b"])]["nome"]
+			_saggio(["Guarda la battaglia in [b]%s[/b]: %s (forza %d) contro %s (forza %d). Il rapporto dà la colonna [b]%s[/b]; il dado fa [b]%d[/b] e la tabella dice [b]%s[/b]: %s." % [Dati.nome_prov(int(e["prov"])), na, int(e["fa"]), nb, int(e["fb"]), e["col"], int(e["dado"]), e["ris"], m._testo_ris(e["ris"], e["grande_a"], na, nb)]], [], "evento")
+			continue
+		var testo := Tutorial.evento(t)
+		if testo != "":
+			tut_visti["ev_" + t] = true
+			_saggio([testo], [], "evento")

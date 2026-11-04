@@ -15,6 +15,10 @@ func _init() -> void:
 		var p: int = m.attese[0]
 		m.invia(p, IA.decidi(m, p))
 	var pl := Plancia3D.new()
+	if args.size() > 3:
+		pl.modalita = args[3]
+	if args.size() > 4:
+		pl.stile = args[4]
 	root.add_child(pl)
 	await process_frame
 	pl.collega(m)

@@ -13,9 +13,15 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   i 16 incantesimi delle quattro scuole, piani di movimento segreti eseguiti punto movimento per punto movimento
   con blocchi, trasporto navale, aeronavi, rane e balene, cattura dei Re, combattimento con la tabella dei risultati,
   terreni, Tattica e Ritirata, indigeni neutrali, vittoria a 120/100/90 di tasse.
-- **Mappa moderna in rilievo** (predefinita): dipinta con ChatGPT sulla geometria originale, con le montagne estruse
-  in 3D, migliaia di alberi 3D nelle foreste, canneti nelle paludi, mare che luccica e nomi delle province scritti
-  sul terreno. Dal menu si torna alla mappa originale SPI.
+- **Partita guidata con il Saggio**: una vera partita contro Re Baxx in cui un vecchio mago spiega ogni fase dei
+  primi tre anni, suggerisce le scelte e commenta la prima battaglia, il primo blocco, la prima cattura.
+- **Libro "Come si gioca"** in dodici capitoli illustrati con le pedine originali: scopo, mappa, pedine, anno di
+  gioco, denaro, movimento, combattimento con la tabella dei risultati, magia, alleanze, comandi, consigli.
+- **Consiglio del Saggio** in ogni fase: l'IA propone la mossa e la spiega; nel reclutamento riempie l'ordine e nel
+  movimento traccia i percorsi, che si possono ritoccare prima di confermare.
+- **Pedine originali** sulla mappa SPI (predefinita), in pile per proprietario. Il tasto **3D** le trasforma in
+  miniature animate; il tasto **Mappa a rilievo** passa alla mappa moderna dipinta con ChatGPT sulla geometria
+  originale, con le montagne estruse in 3D, migliaia di alberi nelle foreste, canneti nelle paludi e mare che luccica.
 - **Tavolo 3D** con la mappa originale ad alta risoluzione su un tavolo di legno; telecamera libera (mouse, tastiera,
   dita); province evidenziabili e cliccabili; stendardi dei proprietari.
 - **Miniature 3D**: Re, Eroe, Mago, Nano, Barbaro, Legionario, Arciere elfico, Orco e Fante feudale creati con Meshy,
@@ -26,12 +32,14 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   maledizioni necromantiche, risveglio dei morti, monete delle tasse.
 - **Avversari IA**, partita a più persone sullo stesso dispositivo (passandoselo, con le scelte segrete coperte),
   **partita online** con codice stanza e **salvataggi** locali o su Firebase.
-- Interfaccia in italiano con i caratteri IM Fell, il logo e il giallo della tabella delle fasi della mappa originale.
+- Interfaccia fantasy in italiano: pergamene, pulsanti di cuoio con bordo d'oro, scudi dei re, fascia delle fasi
+  dell'anno, scheda della provincia con le pedine, cronaca comprimibile; caratteri Pirata One, Almendra e IM Fell.
 
 ## Struttura
 
 - `scripts/motore.gd` regole (deterministiche: seme + decisioni), `scripts/ia.gd` giocatori artificiali,
-  `scripts/plancia3d.gd` tavolo 3D e animazioni, `scripts/main.gd` interfaccia, `scripts/rete.gd` Firebase.
+  `scripts/plancia3d.gd` tavolo 3D e animazioni, `scripts/main.gd` interfaccia, `scripts/tutorial.gd` libro e partita guidata,
+  `scripts/rete.gd` Firebase. `assets/ui/` grafica dell'interfaccia (generata da `tools/grafica_ui.py`).
 - `assets/dati/gioco.json` province (tasse, popoli, terreni, adiacenze, posizione sulla mappa) e pedine.
 - `assets/img/province_id.png` mappa delle province per il clic e l'evidenziazione.
 - `tools/` script usati per estrarre i dati dal modulo TTS, preparare i modelli e controllare i glifi.

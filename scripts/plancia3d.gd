@@ -8,6 +8,8 @@ signal provincia_sopra(p: int)
 
 ## Due mappe: «moderna» (dipinta, verticale, con rilievo e foreste 3D) e «originale» (la mappa SPI del 1980).
 var modalita := "moderna"
+## «3d»: miniature; «pedine»: le pedine di cartone originali, in pile come sul tavolo.
+var stile := "3d"
 var LARGH := 20.0
 var ALT := 20.0 * 1541.0 / 1021.0
 var _rilievo: Image
@@ -127,6 +129,14 @@ func _costruisci_tavolo() -> void:
 	_nodo_mappa.add_child(cor)
 
 ## Cambia mappa (moderna/originale) e ricostruisce tavolo, rilievo e miniature.
+func imposta_stile(st: String) -> void:
+	stile = st
+	for id in figure.keys():
+		figure[id].queue_free()
+	figure = {}
+	if m != null:
+		sincronizza()
+
 func imposta_mappa(mod: String) -> void:
 	modalita = mod
 	_costruisci_mappa()
@@ -621,7 +631,62 @@ func _altezza_tipo(tipo: String) -> float:
 	return 0.5
 
 ## Crea la miniatura di un'unità: modello scalato, basetta col colore del proprietario.
+var _tex_pedine := {}
+
+## Pedina di cartone: la faccia è la scansione a colori del modulo TTS, sotto una piastrina col colore del giocatore.
+func _crea_pedina(id: int) -> Node3D:
+	var radice := Node3D.new()
+	radice.name = "U%d" % id
+	var cont := Node3D.new()
+	cont.name = "Modello"
+	radice.add_child(cont)
+	var lato := 0.58 if modalita == "originale" else 0.46
+	var spess := 0.06
+	var corpo := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3(lato, spess, lato)
+	corpo.mesh = bm
+	corpo.position = Vector3(0, spess / 2 + 0.03, 0)
+	var mc := StandardMaterial3D.new()
+	mc.albedo_color = Color(0.86, 0.80, 0.66)
+	mc.roughness = 0.95
+	corpo.material_override = mc
+	cont.add_child(corpo)
+	var faccia := MeshInstance3D.new()
+	var qm := QuadMesh.new()
+	qm.size = Vector2(lato - 0.01, lato - 0.01)
+	faccia.mesh = qm
+	faccia.rotation_degrees = Vector3(-90, 0, 0)
+	faccia.position = Vector3(0, spess + 0.031, 0)
+	var mf := StandardMaterial3D.new()
+	if not _tex_pedine.has(id):
+		var perc := "res://assets/img/pedine_colore/%03d.png" % id
+		_tex_pedine[id] = load(perc) if ResourceLoader.exists(perc) else null
+	mf.albedo_texture = _tex_pedine[id]
+	mf.roughness = 0.8
+	mf.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	faccia.material_override = mf
+	cont.add_child(faccia)
+	# piastrina e bordo del proprietario
+	var base := MeshInstance3D.new()
+	base.name = "Base"
+	var pb := BoxMesh.new()
+	pb.size = Vector3(lato + 0.06, 0.03, lato + 0.06)
+	base.mesh = pb
+	base.position = Vector3(0, 0.015, 0)
+	radice.add_child(base)
+	var anello := MeshInstance3D.new()
+	anello.name = "Anello"
+	var am := BoxMesh.new()
+	am.size = Vector3(lato + 0.075, 0.012, lato + 0.075)
+	anello.mesh = am
+	anello.position = Vector3(0, 0.032, 0)
+	radice.add_child(anello)
+	return radice
+
 func _crea_figura(id: int) -> Node3D:
+	if stile == "pedine":
+		return _crea_pedina(id)
 	var tipo: String = Dati.unita[id]["tipo"]
 	var radice := Node3D.new()
 	radice.name = "U%d" % id
@@ -742,6 +807,31 @@ func posizioni(p: int) -> Dictionary:
 		return a < b)
 	var out := {}
 	var c := centro(p)
+	if stile == "pedine":
+		# una pila per proprietario, come sul tavolo vero: truppe sotto, capi in cima
+		var pile := {}
+		for id in ids:
+			var o: int = m.u[id]["own"]
+			if not pile.has(o):
+				pile[o] = []
+			pile[o].append(id)
+		var proprietari := pile.keys()
+		var np := proprietari.size()
+		for k in np:
+			var o = proprietari[k]
+			var lista: Array = pile[o]
+			lista.sort_custom(func(a, b):
+				var ca := 1 if Dati.classe(a) in ["capo", "mago"] else 0
+				var cb := 1 if Dati.classe(b) in ["capo", "mago"] else 0
+				return ca < cb if ca != cb else a < b)
+			var off := Vector3.ZERO
+			if np > 1:
+				var ang := TAU * k / np + 0.6
+				off = Vector3(cos(ang), 0, sin(ang)) * (0.55 if modalita == "originale" else 0.44)
+			var base := a_terra(c + off)
+			for j in lista.size():
+				out[lista[j]] = base + Vector3(j * 0.025, j * 0.075, -j * 0.025)
+		return out
 	var passo := 0.36
 	for i in ids.size():
 		var off := Vector3.ZERO
@@ -889,6 +979,7 @@ func _anima_movimenti(lista: Array) -> void:
 		var a: int = e["a"]
 		var da: int = e["da"]
 		var arrivo := centro(a)
+		var pos_fin := posizioni(a) if a > 0 else {}
 		var k := 0
 		for id in ids:
 			var f: Node3D = figure.get(id)
@@ -897,7 +988,7 @@ func _anima_movimenti(lista: Array) -> void:
 			qualcosa = true
 			var ang := k * 2.39996
 			var r := 0.36 * sqrt(float(k)) * 0.95
-			var meta := a_terra(arrivo + Vector3(cos(ang) * r, 0, sin(ang) * r))
+			var meta: Vector3 = pos_fin.get(id, a_terra(arrivo + Vector3(cos(ang) * r, 0, sin(ang) * r)))
 			k += 1
 			var dir := meta - f.position
 			if dir.length() > 0.01:
