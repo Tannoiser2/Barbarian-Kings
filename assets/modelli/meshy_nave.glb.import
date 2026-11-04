@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://dnntvlsu50q4p"
-path="res://.godot/imported/aeronave.glb-75cd80057b8ee48153b7c514463f9519.scn"
+uid="uid://cx4ijw2rc7ke4"
+path="res://.godot/imported/meshy_nave.glb-0d9bef496917bc0056412f1bd292f055.scn"
 
 [deps]
 
-source_file="res://assets/modelli/aeronave.glb"
-dest_files=["res://.godot/imported/aeronave.glb-75cd80057b8ee48153b7c514463f9519.scn"]
+source_file="res://assets/modelli/meshy_nave.glb"
+dest_files=["res://.godot/imported/meshy_nave.glb-0d9bef496917bc0056412f1bd292f055.scn"]
 
 [params]
 

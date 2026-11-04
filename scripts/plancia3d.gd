@@ -18,10 +18,10 @@ const MODELLO := {
 	"re": "re", "eroe": "eroe", "mago": "mago",
 	"fanteria_barbara": "barbaro", "legione": "legionario", "arcieri_elfici": "elfo",
 	"fanteria_orchesca": "orco", "fanteria_nanica": "nano", "fanteria_feudale": "feudale",
-	"flotta_barbara": "flotta_barbara", "cavalleria_barbara": "cavalleria_barbara", "galea": "galea",
-	"catafratti": "catafratti", "flotta_elfica": "flotta_elfica", "cavalleria_elfica": "cavalleria_elfica",
-	"cavalieri_warg": "cavalieri_warg", "rana_da_guerra": "rana_da_guerra", "popolo_balena": "popolo_balena",
-	"aeronave": "aeronave", "flotta_pirata": "flotta_pirata",
+	"flotta_barbara": "meshy_nave", "cavalleria_barbara": "cavalleria_barbara", "galea": "galea",
+	"catafratti": "catafratti", "flotta_elfica": "meshy_nave", "cavalleria_elfica": "cavalleria_elfica",
+	"cavalieri_warg": "cavalieri_warg", "rana_da_guerra": "meshy_rana", "popolo_balena": "meshy_balena",
+	"aeronave": "meshy_aeronave", "flotta_pirata": "meshy_nave",
 }
 const ANIMATI := ["re", "eroe", "mago", "barbaro", "legionario", "elfo", "orco", "nano", "feudale"]
 
@@ -563,6 +563,27 @@ func _carica_modello(tipo: String) -> Node3D:
 	var n3: Node3D = ps.instantiate()
 	return n3
 
+## Modelli senza texture (colori per faccia) e varianti tinte (la flotta pirata usa la nave elfica, più scura).
+func _sistema_materiali(mod: Node, tipo: String) -> void:
+	for c in mod.find_children("*", "MeshInstance3D", true, false):
+		var mi: MeshInstance3D = c
+		if mi.mesh == null:
+			continue
+		for i in mi.mesh.get_surface_count():
+			var mat = mi.mesh.surface_get_material(i)
+			var nuovo: StandardMaterial3D = null
+			if mat is StandardMaterial3D and (mat as StandardMaterial3D).albedo_texture == null:
+				nuovo = (mat as StandardMaterial3D).duplicate()
+				nuovo.vertex_color_use_as_albedo = true
+			elif mat == null:
+				nuovo = StandardMaterial3D.new()
+				nuovo.vertex_color_use_as_albedo = true
+			if tipo in ["flotta_pirata", "flotta_barbara"]:
+				nuovo = (mat as StandardMaterial3D).duplicate() if mat is StandardMaterial3D else StandardMaterial3D.new()
+				nuovo.albedo_color = Color(0.45, 0.38, 0.36) if tipo == "flotta_pirata" else Color(1.0, 0.72, 0.6)
+			if nuovo != null:
+				mi.set_surface_override_material(i, nuovo)
+
 func _aabb(n3: Node) -> AABB:
 	var tot := AABB()
 	var primo := true
@@ -593,10 +614,10 @@ func _altezza_tipo(tipo: String) -> float:
 		"capo", "mago": return 0.78
 		"fanteria": return 0.66
 		"cavalleria": return 0.75
-		"flotta": return 0.55
-		"aeronave": return 0.55
-		"balena": return 0.4
-		"rana": return 0.45
+		"flotta": return 0.62
+		"aeronave": return 0.62
+		"balena": return 0.8
+		"rana": return 0.5
 	return 0.5
 
 ## Crea la miniatura di un'unità: modello scalato, basetta col colore del proprietario.
@@ -605,6 +626,7 @@ func _crea_figura(id: int) -> Node3D:
 	var radice := Node3D.new()
 	radice.name = "U%d" % id
 	var mod := _carica_modello(tipo)
+	_sistema_materiali(mod, tipo)
 	var cont := Node3D.new()
 	cont.name = "Modello"
 	cont.add_child(mod)

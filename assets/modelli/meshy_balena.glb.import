@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://yh58auv0u510"
-path="res://.godot/imported/flotta_pirata.glb-084cfdb709a7587cdabeb293aa357cee.scn"
+uid="uid://dsl8eye6af6ry"
+path="res://.godot/imported/meshy_balena.glb-f1a8b773a59f4d428f0e921986e7f94a.scn"
 
 [deps]
 
-source_file="res://assets/modelli/flotta_pirata.glb"
-dest_files=["res://.godot/imported/flotta_pirata.glb-084cfdb709a7587cdabeb293aa357cee.scn"]
+source_file="res://assets/modelli/meshy_balena.glb"
+dest_files=["res://.godot/imported/meshy_balena.glb-f1a8b773a59f4d428f0e921986e7f94a.scn"]
 
 [params]
 

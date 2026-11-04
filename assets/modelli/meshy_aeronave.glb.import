@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://b0un64ofl0rb3"
-path="res://.godot/imported/flotta_elfica.glb-8735db5e017730bad50bbb72ac8a1c65.scn"
+uid="uid://b2aep2vv0n5mn"
+path="res://.godot/imported/meshy_aeronave.glb-dd78060ea4b921cc7f60a9b037324cf0.scn"
 
 [deps]
 
-source_file="res://assets/modelli/flotta_elfica.glb"
-dest_files=["res://.godot/imported/flotta_elfica.glb-8735db5e017730bad50bbb72ac8a1c65.scn"]
+source_file="res://assets/modelli/meshy_aeronave.glb"
+dest_files=["res://.godot/imported/meshy_aeronave.glb-dd78060ea4b921cc7f60a9b037324cf0.scn"]
 
 [params]
 

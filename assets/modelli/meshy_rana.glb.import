@@ -3,13 +3,13 @@
 importer="scene"
 importer_version=1
 type="PackedScene"
-uid="uid://bf4gnynjpx02e"
-path="res://.godot/imported/popolo_balena.glb-3313aaa3c84ccf27a8217aebb5972ca9.scn"
+uid="uid://bq6345mem52i4"
+path="res://.godot/imported/meshy_rana.glb-947ff3f3478e56ff180eb4c6cfd92396.scn"
 
 [deps]
 
-source_file="res://assets/modelli/popolo_balena.glb"
-dest_files=["res://.godot/imported/popolo_balena.glb-3313aaa3c84ccf27a8217aebb5972ca9.scn"]
+source_file="res://assets/modelli/meshy_rana.glb"
+dest_files=["res://.godot/imported/meshy_rana.glb-947ff3f3478e56ff180eb4c6cfd92396.scn"]
 
 [params]
 

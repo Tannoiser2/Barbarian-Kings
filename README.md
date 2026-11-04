@@ -19,8 +19,9 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
 - **Tavolo 3D** con la mappa originale ad alta risoluzione su un tavolo di legno; telecamera libera (mouse, tastiera,
   dita); province evidenziabili e cliccabili; stendardi dei proprietari.
 - **Miniature 3D**: Re, Eroe, Mago, Nano, Barbaro, Legionario, Arciere elfico, Orco e Fante feudale creati con Meshy,
-  con scheletro e animazioni (camminata, corsa, attacco, morte, incantesimo); flotte, cavallerie, warg, rane, balene
-  e aeronavi dai modelli 3D del modulo TTS.
+  con scheletro e animazioni (camminata, corsa, attacco, morte, incantesimo); balena da guerra, aeronave, rana da
+  guerra e nave a vele (usata, con tinte diverse, per le flotte barbara, elfica e pirata) creati con Meshy;
+  galea, cavallerie e warg dai modelli 3D del modulo TTS.
 - **Effetti speciali**: battaglie con scintille e lampi, tornado, tempeste con fulmini, mare gelato, alluvioni,
   maledizioni necromantiche, risveglio dei morti, monete delle tasse.
 - **Avversari IA**, partita a più persone sullo stesso dispositivo (passandoselo, con le scelte segrete coperte),
