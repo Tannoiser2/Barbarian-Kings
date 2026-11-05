@@ -1964,6 +1964,9 @@ func _lista_capi(p: int) -> void:
 		var b := _bottone(t, func(): _seleziona_capo(p, id), 15)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.icon = _icona_pedina(id, 36)
+		b.clip_text = true
+		b.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+		b.custom_minimum_size = Vector2(0, 46)
 		b.add_theme_constant_override("icon_max_width", 40)
 		if id == st["sel"]:
 			_veste(b, "verde")

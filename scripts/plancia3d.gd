@@ -63,11 +63,10 @@ func _ready() -> void:
 	_costruisci_ambiente()
 	_costruisci_mappa()
 	_linee = MeshInstance3D.new()
-	var lm := StandardMaterial3D.new()
-	lm.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
-	lm.vertex_color_use_as_albedo = true
-	lm.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	var lm := ShaderMaterial.new()
+	lm.shader = load("res://scripts/percorso.gdshader")
 	_linee.material_override = lm
+	_linee.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
 	add_child(_linee)
 	cam = Camera3D.new()
 	cam.fov = 45.0
@@ -422,37 +421,119 @@ func _ridisegna_evidenza() -> void:
 	_evid_tex.update(_evid_img)
 
 ## Linee dei percorsi: lista di {via: [province], colore, partenza}
+## Percorsi di marcia: un nastro che sale ad arco da una provincia all'altra con chevron animati
+## verso la meta, una punta in fondo e un segno su ogni tappa.
 func disegna_percorsi(lista: Array) -> void:
+	for c in _linee.get_children():
+		c.queue_free()
 	var im := ImmediateMesh.new()
 	var vuoto := true
+	var punte := []
 	for pr in lista:
-		var pts := [centro(pr["partenza"])]
+		var tappe := [a_terra(centro(pr["partenza"]))]
 		for q in pr["via"]:
-			pts.append(centro(q))
-		if pts.size() < 2:
+			tappe.append(a_terra(centro(q)))
+		if tappe.size() < 2:
 			continue
 		vuoto = false
 		var col: Color = pr["colore"]
+		# campionamento: archi che si alzano fra le tappe, raccordati
+		var pts := []
+		for i in tappe.size() - 1:
+			var a: Vector3 = tappe[i]
+			var b: Vector3 = tappe[i + 1]
+			var l := a.distance_to(b)
+			var alt := clampf(0.35 + l * 0.12, 0.35, 1.1)
+			# la curva si piega un po' di lato per distinguere andata e ritorno
+			var lato := Vector3(-(b - a).z, 0, (b - a).x).normalized() * l * 0.12
+			var n := maxi(8, int(l * 10))
+			for k in n + (1 if i == tappe.size() - 2 else 0):
+				var t := float(k) / n
+				var base := a.lerp(b, t) + lato * sin(t * PI)
+				var p := base + Vector3(0, 0.16 + alt * sin(t * PI), 0)
+				pts.append(p)
+		# accorcia la fine per lasciare spazio alla punta
+		var fine: Vector3 = pts[-1]
+		var dir_f: Vector3 = (pts[-1] - pts[-4]).normalized() if pts.size() > 4 else Vector3.FORWARD
+		var lungh_punta := 0.42
+		while pts.size() > 2 and pts[-1].distance_to(fine) < lungh_punta:
+			pts.pop_back()
+		var larg := 0.26
 		im.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
-		for i in pts.size() - 1:
-			var a: Vector3 = pts[i] + Vector3(0, 0.12, 0)
-			var b: Vector3 = pts[i + 1] + Vector3(0, 0.12, 0)
-			var d := (b - a)
-			var lato := Vector3(-d.z, 0, d.x).normalized() * 0.09
-			for v in [a - lato, a + lato, b + lato, a - lato, b + lato, b - lato]:
-				im.surface_set_color(col)
-				im.surface_add_vertex(v)
-			# punta della freccia sull'ultima tappa
-			if i == pts.size() - 2:
-				var dir := d.normalized()
-				var l2 := Vector3(-dir.z, 0, dir.x) * 0.3
-				var punta := b + Vector3(0, 0.01, 0)
-				var dietro := b - dir * 0.5
-				for v in [dietro - l2, punta, dietro + l2]:
-					im.surface_set_color(col.lightened(0.2))
-					im.surface_add_vertex(v)
+		var dist := 0.0
+		var prec_l := Vector3.ZERO
+		var prec_r := Vector3.ZERO
+		var prec_d := 0.0
+		for i in pts.size():
+			var p: Vector3 = pts[i]
+			var t: Vector3 = (pts[mini(i + 1, pts.size() - 1)] - pts[maxi(i - 1, 0)]).normalized()
+			var lat := Vector3(-t.z, 0, t.x).normalized() * larg * 0.5
+			if i > 0:
+				dist += p.distance_to(pts[i - 1])
+				var l2 := p - lat
+				var r2 := p + lat
+				for v in [[prec_l, prec_d, 0.0], [prec_r, prec_d, 1.0], [r2, dist, 1.0], [prec_l, prec_d, 0.0], [r2, dist, 1.0], [l2, dist, 0.0]]:
+					im.surface_set_color(col)
+					im.surface_set_uv(Vector2(v[1], v[2]))
+					im.surface_add_vertex(v[0])
+			prec_l = p - lat
+			prec_r = p + lat
+			prec_d = dist
 		im.surface_end()
+		punte.append([pts[-1], fine, col])
+		# segni sulle tappe intermedie
+		for i in range(1, tappe.size() - 1):
+			_segno_tappa(tappe[i] + Vector3(0, 0.05, 0), col, 0.16)
 	_linee.mesh = null if vuoto else im
+	for pu in punte:
+		_punta(pu[0], pu[1], pu[2])
+
+func _punta(da: Vector3, a: Vector3, col: Color) -> void:
+	var dir := (a - da).normalized()
+	var lat := Vector3(-dir.z, 0, dir.x).normalized() * 0.3
+	var im := ImmediateMesh.new()
+	im.surface_begin(Mesh.PRIMITIVE_TRIANGLES)
+	var scuro := Color(0.08, 0.05, 0.03)
+	for v in [[da - lat * 1.25 - dir * 0.04, scuro], [a + dir * 0.06, scuro], [da + lat * 1.25 - dir * 0.04, scuro]]:
+		im.surface_set_color(v[1])
+		im.surface_add_vertex(v[0] - Vector3(0, 0.005, 0))
+	for v in [da - lat, a, da + lat]:
+		im.surface_set_color(col.lightened(0.25))
+		im.surface_add_vertex(v)
+	im.surface_end()
+	var mi := MeshInstance3D.new()
+	mi.mesh = im
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.vertex_color_use_as_albedo = true
+	mat.cull_mode = BaseMaterial3D.CULL_DISABLED
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_linee.add_child(mi)
+	# la meta pulsa
+	_segno_tappa(a_terra(a) + Vector3(0, 0.04, 0), col, 0.3, true)
+
+func _segno_tappa(pos: Vector3, col: Color, r: float, pulsa := false) -> void:
+	var mi := MeshInstance3D.new()
+	var tm := TorusMesh.new()
+	tm.inner_radius = r * 0.72
+	tm.outer_radius = r
+	tm.rings = 24
+	tm.ring_segments = 6
+	mi.mesh = tm
+	mi.scale = Vector3(1, 0.25, 1)
+	mi.position = pos
+	var mat := StandardMaterial3D.new()
+	mat.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
+	mat.albedo_color = Color(col.lightened(0.2), 0.9)
+	mat.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
+	mi.material_override = mat
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	_linee.add_child(mi)
+	if pulsa:
+		var tw := mi.create_tween().set_loops()
+		tw.tween_property(mi, "scale", Vector3(1.35, 0.25, 1.35), 0.6).set_trans(Tween.TRANS_SINE)
+		tw.tween_property(mi, "scale", Vector3(1, 0.25, 1), 0.6).set_trans(Tween.TRANS_SINE)
 
 # ---------------------------------------------------------------- telecamera
 
