@@ -133,8 +133,9 @@ static func adiacenti(a: int, b: int) -> bool:
 	return b in province[a]["adiacenti"]
 
 ## Percorso dell'immagine della pedina, secondo la grafica scelta (vuoto se non esiste).
-static func img_pedina(id: int) -> String:
-	var p := "res://assets/img/pedine_ill/%03d.webp" % id if grafica_pedine == "illustrate" else "res://assets/img/pedine_colore/%03d.png" % id
+## illustrata: usa sempre le pedine illustrate (menu e scelte), qualunque sia la grafica della mappa.
+static func img_pedina(id: int, illustrata := false) -> String:
+	var p := "res://assets/img/pedine_ill/%03d.webp" % id if (illustrata or grafica_pedine == "illustrate") else "res://assets/img/pedine_colore/%03d.png" % id
 	if not ResourceLoader.exists(p):
 		p = "res://assets/img/pedine_colore/%03d.png" % id
 	return p if ResourceLoader.exists(p) else ""

@@ -839,6 +839,20 @@ func _costruisci_gioco() -> void:
 	sv.add_child(saggio_bottoni)
 	_riempi_diario()
 
+var _icone_ped := {}
+
+## Pedina illustrata rimpicciolita, da usare come icona nei pulsanti dei menu.
+func _icona_pedina(id: int, lato := 36) -> Texture2D:
+	var k := "%d|%d" % [id, lato]
+	if not _icone_ped.has(k):
+		var perc := Dati.img_pedina(id, true)
+		if perc == "":
+			return null
+		var img: Image = (load(perc) as Texture2D).get_image()
+		img.resize(lato, lato, Image.INTERPOLATE_LANCZOS)
+		_icone_ped[k] = ImageTexture.create_from_image(img)
+	return _icone_ped[k]
+
 var _icona_s: Texture2D
 func _icona_saggio() -> Texture2D:
 	if _icona_s == null:
@@ -1731,6 +1745,13 @@ func _p_acquisti(p: int) -> void:
 		for c in st["carrello"]:
 			mant += Dati.unita[c["id"]]["mant"]
 			var h := HBoxContainer.new()
+			var ic_c := TextureRect.new()
+			var perc_c := Dati.img_pedina(int(c["id"]), true)
+			ic_c.texture = load(perc_c) if perc_c != "" else null
+			ic_c.custom_minimum_size = Vector2(34, 34)
+			ic_c.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			ic_c.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			h.add_child(ic_c)
 			var t := "%s in %s%s" % [Dati.nome_tipo(c["id"]), Dati.nome_prov(c["p"]), " (illusoria)" if c.get("illus", false) else ""]
 			var l := _etichetta(t, 15)
 			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1773,15 +1794,13 @@ func _p_acquisti(p: int) -> void:
 			var h := HBoxContainer.new()
 			var ic := TextureRect.new()
 			var nome_ic := "%03d" % id0
-			var perc_ic := Dati.img_pedina(int(nome_ic))
+			var perc_ic := Dati.img_pedina(int(nome_ic), true)
 			ic.texture = load(perc_ic) if perc_ic != "" else null
-			ic.custom_minimum_size = Vector2(46, 46)
+			ic.custom_minimum_size = Vector2(62, 62)
 			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 			h.add_child(ic)
 			var desc := "%s\ncosto %d, mant. %d" % [Dati.nome_tipo(id0), dd["costo"], dd["mant"]]
-			if Dati.is_militare(id0):
-				desc += ", forza %d, mov. %d" % [dd["forza"], dd["mov"]]
 			var l := _etichetta(desc, 15)
 			l.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 			h.add_child(l)
@@ -1948,6 +1967,7 @@ func _lista_capi(p: int) -> void:
 			t += "  >  " + Dati.nome_prov(o["via"][-1]) + (" con %d unità" % o["unita"].size() if not o["unita"].is_empty() else "")
 		var b := _bottone(t, func(): _seleziona_capo(p, id), 15)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
+		b.icon = _icona_pedina(id, 36)
 		if id == st["sel"]:
 			_veste(b, "verde")
 		lista.add_child(b)
@@ -1982,6 +2002,7 @@ func _seleziona_capo(p: int, capo: int) -> void:
 		for id in ids:
 			var cb := CheckBox.new()
 			cb.text = "%s (F%d M%d)" % [Dati.nome_unita(id), Dati.unita[id]["forza"], Dati.unita[id]["mov"]]
+			cb.icon = _icona_pedina(id, 30)
 			cb.disabled = imp.has(id)
 			cb.button_pressed = id in st["ordini"][capo]["unita"]
 			cb.toggled.connect(func(on: bool):
