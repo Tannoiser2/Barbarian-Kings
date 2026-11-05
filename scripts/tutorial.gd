@@ -21,7 +21,12 @@ static func capitoli() -> Array:
 		{"titolo": "Tasse, mantenimento e reclute", "testo": _cap_denaro()},
 		{"titolo": "Capi e movimento", "testo": _cap_movimento()},
 		{"titolo": "Il combattimento", "testo": _cap_combattimento()},
-		{"titolo": "La magia", "testo": _cap_magia()},
+		{"titolo": "Le abilità dei capi", "testo": _cap_abilita()},
+		{"titolo": "La magia: dadi e valori", "testo": _cap_magia()},
+		{"titolo": "Scuola della mente", "testo": _cap_ramo("mente")},
+		{"titolo": "Scuola degli elementi", "testo": _cap_ramo("elementi")},
+		{"titolo": "Scuola dell'illusione", "testo": _cap_ramo("illusione")},
+		{"titolo": "Scuola della necromanzia", "testo": _cap_ramo("necromanzia")},
 		{"titolo": "Alleanze e diplomazia", "testo": _cap_alleanze()},
 		{"titolo": "Come si usa questa versione", "testo": _cap_comandi()},
 		{"titolo": "Consigli del Saggio", "testo": _cap_consigli()},
@@ -146,7 +151,7 @@ static func _cap_combattimento() -> String:
 Dove si incontrano forze nemiche, in ordine di precedenza ognuno sceglie chi attaccare. Si sommano le forze di ogni lato (contando il terreno) e si calcola il [b]rapporto[/b] dal lato più forte, arrotondando a favore del più debole: 7 contro 3 fa [b]2-1[/b], 9 contro 3 fa [b]3-1[/b]. Il rapporto va da 1-1 a 6-1.
 
 %s
-Ogni punto di [i]Tattica[/i] dei capi presenti sposta la colonna di uno a proprio favore. Due eroi tattici possono trasformare un 1-1 in un 3-1!
+Conta la [i]Tattica[/i] più alta fra i capi di ciascun lato: la differenza sposta la colonna a favore di chi ne ha di più. Un Re con Tattica 2 contro un nemico senza tattica trasforma un 1-1 in un 3-1!
 
 %s
 Si tira un dado e si legge la tabella. [b]L[/b] è la forza più grande, [b]S[/b] la più piccola; [b]e[/b] = annientata, [b]me[/b] = perde unità per almeno metà della forza, [b]r[/b] = si ritira.
@@ -171,22 +176,96 @@ Montagna: nani doppi, cavalleria a metà. Foresta: elfi doppi, cavalleria e legi
 Alla fine della battaglia gli indigeni attaccano chi non li ha combattuti. Per conquistare una provincia con un presidio neutrale porta una forza almeno doppia: a 2-1 il rischio è già basso, a 3-1 quasi nullo.""" % [_t("La ritirata"), _t("Il terreno"), _t("Gli indigeni")]
 	return t
 
+static func _carta(k: String, lato := 96) -> String:
+	var p := Carte.percorso_immagine(k)
+	if p == "":
+		p = "res://assets/ui/carta_%s.png" % Carte.emblema(k)
+	return "[img=%dx%d]%s[/img]" % [lato, int(lato * 1.5), p]
+
+static func _cap_abilita() -> String:
+	var t := """Ogni Re riceve all'inizio [b]tre abilità[/b], scelte in segreto e anche ripetute; ogni Eroe ne riceve una quando lo assoldi, ogni Mago un ramo di magia. Le abilità restano per tutta la partita.
+
+"""
+	t += "[table=2][cell]%s  [/cell][cell]%s\nOgni volta che la scegli aggiunge [b]1 punto movimento[/b] al capo e a tutte le unità che guida. Un Re con Marcia 2 porta la fanteria (movimento 2) a 4: può attraversare due montagne in un anno, o colpire una provincia lontana prima che il nemico se lo aspetti.\n[i]Consiglio: utile a chi gioca d'attacco e ha province lontane fra loro.[/i]\n[/cell]" % [_carta("marcia"), _t("Marcia")]
+	t += "[cell]%s  [/cell][cell]%s\nDopo una battaglia persa, si confronta la Ritirata più alta dei capi dei due lati:\n[indent]- se lo sconfitto ne ha [b]2 o più[/b] del vincitore, [b]non si ritira[/b] e resta sul campo;\n- se ne ha di meno, è il [b]vincitore[/b] a scegliere dove si ritira (magari verso un'altra trappola);\n- altrimenti sceglie lo sconfitto.[/indent]\n[i]Consiglio: un capo con Ritirata 2 difende una provincia chiave anche quando perde.[/i]\n[/cell]" % [_carta("ritirata"), _t("Ritirata")]
+	t += "[cell]%s  [/cell][cell]%s\nIn battaglia conta la Tattica più alta fra i capi di ciascun lato; la differenza sposta la colonna della tabella a favore di chi ne ha di più. Esempio: 6 contro 6 è un 1-1, ma con Tattica 2 contro 0 diventa un [b]3-1[/b] a tuo favore. Può anche rovesciare un rapporto sfavorevole: chi ha meno forza ma più tattica può diventare l'attaccante \"grande\" della tabella.\n[i]Consiglio: la scelta più forte per chi combatte molto. Due Tattiche sul Re sono un classico.[/i]\n[/cell][/table]\n\n" % [_carta("tattica"), _t("Tattica")]
+	t += _t("I rami di magia") + "\nSe dai al Re un ramo di magia, il Re diventa un incantatore con valore 2 in quel ramo. Scegliere due volte lo stesso ramo gli dà [b]due incantesimi[/b] di quel ramo all'anno, ognuno con il suo valore. I quattro rami sono spiegati nei prossimi capitoli.\n\n"
+	t += _t("Eroi e maghi") + "\nL'[b]Eroe[/b] (10 sequin, mantenimento 4) arriva con un'abilità a tua scelta: un eroe con Tattica è il comandante ideale di un secondo esercito. Il [b]Mago[/b] (10 sequin, mantenimento 4) conosce un solo ramo, viaggia da solo e non guida truppe: tienilo lontano dai nemici, perché se resta solo dove ci sono nemici muore."
+	return t
+
 static func _cap_magia() -> String:
 	var t := """%s
-Ogni incantatore (un Mago, o un Re con un ramo di magia) ha valore [b]2[/b] in ogni ramo che conosce. Per lanciare si tira un dado: l'incantesimo riesce con un risultato pari o inferiore al valore. Un [b]1[/b] alza il valore (fino a 5), un [b]6[/b] lo abbassa (fino a 1). Ogni ramo si usa una volta per anno; il costo in sequin si paga solo se riesce.
+Un incantatore è un Mago, oppure un Re a cui hai dato un ramo di magia. In ogni ramo che conosce parte con [b]valore 2[/b]. Ogni incantesimo appartiene a un ramo e si lancia in una fase precisa dell'anno.
 
 %s
-Nelle fasi in cui puoi lanciare, il pannello mostra un menu per ogni incantatore: scegli l'incantesimo e il bersaglio (spesso cliccando una provincia).
-""" % [_t("Come funziona"), _t("Lanciare un incantesimo")]
-	var rami := {"mente": [], "elementi": [], "illusione": [], "necromanzia": []}
+Per lanciare si tira un dado: l'incantesimo [b]riesce con un risultato pari o inferiore al valore[/b].
+""" % [_t("Chi lancia"), _t("Il dado")]
+	t += "[font_size=17][table=3][cell][b]Valore  [/b][/cell][cell][b]Riesce con  [/b][/cell][cell][b]Probabilità[/b][/cell]"
+	for v in range(1, 6):
+		t += "[cell]%d[/cell][cell]%s[/cell][cell]%d su 6 (%d%%)[/cell]" % [v, "1" if v == 1 else "1 - %d" % v, v, int(round(v * 100.0 / 6.0))]
+	t += "[/table][/font_size]\n\n"
+	t += """%s
+Il dado cambia anche il mago: con un [b]1[/b] il valore sale di uno (fino a 5), con un [b]6[/b] scende di uno (fino a 1). Un mago che lancia spesso, prima o poi, diventa più potente... o perde fiducia.
+
+%s
+[indent]- Ogni ramo si usa [b]una volta all'anno[/b] per ogni volta che l'incantatore lo conosce.
+- Il [b]costo[/b] in sequin si paga [b]solo se l'incantesimo riesce[/b]: tentare non costa nulla.
+- L'incantatore deve essere libero (non prigioniero) e sulla mappa.
+- Gli incantesimi di una stessa fase si risolvono insieme; quelli di movimento dopo che tutti hanno scritto i piani.[/indent]
+
+%s
+Nel pannello di ogni fase magica compare una riga per ogni incantatore, con il valore e la probabilità di riuscita, e una fila di [b]carte[/b]: clicca quella dell'incantesimo che vuoi lanciare (cliccala di nuovo per rinunciare) e poi scegli il bersaglio, spesso direttamente sulla mappa. Mentre il gioco risolve, la carta compare al centro dello schermo e la magia prende forma sul tavolo.
+
+%s
+Fra un anno e l'altro gli incantesimi seguono quest'ordine:
+[indent]Alleanze: [i]Discordia, Armonia[/i]
+Tornado: [i]Tornado[/i]
+Reclutamento: [i]Unità illusorie[/i]
+Prima fase magica: [i]Uccidi mago o eroe, Uccidi unità, Fedeltà[/i]
+Prima dei piani: [i]Chiaroveggenza[/i]
+Seconda fase magica: [i]Controllo mentale, tempeste, Mare gelato, Alluvione, Invisibilità[/i]
+Prima del movimento: [i]Rivela illusioni[/i]
+Terza fase magica: [i]Risveglio dei morti[/i][/indent]
+
+[i]Per imparare giocando, dal menu principale scegli [b]Scuola di magia[/b]: il tuo Re conoscerà tre rami e il Saggio ti seguirà incantesimo per incantesimo.[/i]""" % [_t("Il valore cambia"), _t("Le regole d'oro"), _t("Come si lancia"), _t("Il calendario della magia")]
+	return t
+
+const LEZIONI := {
+	"discordia": ["Alleanze", "due giocatori", "Due re che volevano allearsi restano nemici per tutto l'anno: non possono passare l'uno attraverso l'altro e non combattono insieme.", "Lanciala sui due re più forti quando temi che si coalizzino contro di te."],
+	"armonia": ["Alleanze", "due giocatori", "Costringe due re ad allearsi per l'anno, anche contro la loro volontà, e annulla una Discordia.", "Usala per mettere al sicuro un confine: un vicino alleato per forza non ti attaccherà quest'anno."],
+	"fedelta": ["Prima fase magica", "unità indigene di una provincia", "Ogni unità indigena che compri con 5 sequin passa al tuo servizio: non devi più combatterla e la provincia è a un passo.", "Ottima per prendere una provincia ricca senza battaglia. Prepara 5 sequin per ogni unità."],
+	"chiaroveggenza": ["Prima dei piani", "un giocatore", "Vedi le frecce del piano di movimento dell'avversario prima di scrivere il tuo.", "Non costa nulla: tentala ogni anno contro il vicino più pericoloso."],
+	"controllo": ["Seconda fase magica", "un eroe nemico", "L'eroe nemico ignora i suoi ordini e segue il percorso che tracci tu, con le truppe che guida.", "Portalo dentro una provincia piena delle tue truppe, o lontano dalla battaglia decisiva."],
+	"tornado": ["Tornado", "una provincia", "Quest'anno la provincia non rende tasse a nessuno.", "Colpisci la provincia più ricca del re in testa alla classifica."],
+	"tempesta_mari": ["Seconda fase magica", "due mari vicini", "Le unità navali nemiche restano ferme e nessuna può entrare in quei mari.", "Ferma un'invasione dal mare o isola un'isola nemica."],
+	"tempesta_monti": ["Seconda fase magica", "due montagne vicine", "Unità terrestri e aeree nemiche (non i nani) restano ferme e non possono entrarvi.", "Chiudi i passi di montagna mentre attacchi altrove."],
+	"gelo": ["Seconda fase magica", "un mare o una palude", "Le flotte non passano, le unità di terra sì; chi vi resta alla fine dell'anno affoga.", "Apri un ponte di ghiaccio per il tuo esercito, ma non fermarti sul mare!"],
+	"alluvione": ["Seconda fase magica", "una provincia di terra", "Le forze nemiche che vi si trovano restano bloccate e lì non si combatte.", "Salva una provincia assediata o blocca un esercito nemico per un anno."],
+	"illusioni": ["Reclutamento", "le unità che compri", "Ogni unità costa solo 1 sequin, ma è finta: svanisce alla prima battaglia. Il nemico però non lo sa.", "Crea un esercito di paura per difendere le province o per attirare il nemico."],
+	"invisibilita": ["Seconda fase magica", "un tuo capo e la sua forza", "L'esercito sparisce dalla mappa: non può essere bloccato né attaccato durante il movimento.", "Perfetta per colpire alle spalle una provincia sguarnita."],
+	"rivela": ["Prima del movimento", "una provincia", "Scopri unità illusorie e forze invisibili nemiche in quella provincia.", "Usala sull'esercito nemico troppo grande per essere vero."],
+	"uccidi_capo": ["Prima fase magica", "un eroe o un mago nemico", "Costa 8 sequin: il bersaglio muore all'istante.", "Elimina l'eroe che guida il secondo esercito nemico: le sue truppe resteranno ferme."],
+	"uccidi_unita": ["Prima fase magica", "unità nemiche in una provincia", "Costa 5 sequin per ogni unità distrutta.", "Indebolisci una difesa prima del tuo attacco, colpendo le unità più forti."],
+	"resurrezione": ["Terza fase magica", "una provincia dove si è combattuto", "Tutti i caduti della battaglia, amici e nemici, tornano come zombi al tuo servizio. Con un 6, però, perdi unità.", "Dopo una grande battaglia può darti un esercito gratis."],
+}
+
+static func _cap_ramo(r: String) -> String:
+	var intro := {
+		"mente": "La magia della mente agisce sulla volontà: rompe e crea alleanze, compra la fedeltà degli indigeni, spia i piani e piega gli eroi nemici.",
+		"elementi": "La magia degli elementi scatena la natura: tornado, tempeste, ghiaccio e acqua cambiano la mappa per un anno intero.",
+		"illusione": "La magia illusoria inganna gli occhi: eserciti che non esistono, eserciti che nessuno vede. Il regolamento consigliava di lasciarla per le partite successive alla prima.",
+		"necromanzia": "La necromanzia è la magia della morte: uccide capi e soldati da lontano e risveglia i caduti.",
+	}
+	var t := "%s\n\n" % intro[r]
+	t += "[table=2]"
 	for s in Dati.INCANTESIMI:
-		rami[Dati.INCANTESIMI[s]["ramo"]].append(s)
-	for r in rami:
-		t += "\n" + _t(Dati.NOMI_ABILITA[r]) + "\n"
-		for s in rami[r]:
-			var inc: Dictionary = Dati.INCANTESIMI[s]
-			t += "[indent][i]%s[/i]%s: %s[/indent]\n" % [inc["nome"], " (costo %d)" % inc["costo"] if inc["costo"] > 0 else "", Dati.DESCR_INCANTESIMI[s]]
-	t += "\n[i]Il regolamento consigliava di lasciare da parte la magia illusoria nelle prime partite.[/i]"
+		var inc: Dictionary = Dati.INCANTESIMI[s]
+		if inc["ramo"] != r:
+			continue
+		var l: Array = LEZIONI[s]
+		var costo := "gratis" if inc["costo"] == 0 else "%d sequin%s" % [inc["costo"], " per unità" if s in ["fedelta", "uccidi_unita", "illusioni"] else ""]
+		t += "[cell]%s  [/cell][cell]%s\n[color=#%s]Fase: %s  -  Bersaglio: %s  -  Costo: %s[/color]\n%s\n[i]%s[/i]\n[/cell]" % [_carta(s), _t(inc["nome"]), BRUNO, l[0], l[1], costo, l[2], l[3]]
+	t += "[/table]"
 	return t
 
 static func _cap_alleanze() -> String:
@@ -299,6 +378,61 @@ static func guida(fase: String, anno: int) -> Array:
 			"battaglia":
 				return ["Un'altra battaglia: confronta le forze nel pannello e decidi se attaccare. Ricorda che gli indigeni attaccano comunque alla fine."]
 	return []
+
+# ---------------------------------------------------------------- scuola di magia
+
+static func intro_magia() -> Array:
+	return [
+		"Benvenuto alla [b]Scuola di magia[/b]! In questa partita il tuo Re sarà un incantatore: conoscerà tre rami di magia e io ti spiegherò ogni incantesimo nel momento in cui potrai lanciarlo.",
+		"La regola fondamentale: per lanciare si tira un dado e l'incantesimo riesce se il risultato è [b]pari o inferiore al valore magico[/b]. All'inizio il valore è 2, quindi riesci con 1 o 2: [b]una volta su tre[/b]. Con un 1 il valore sale, con un 6 scende.",
+		"Il costo in sequin si paga [b]solo se l'incantesimo riesce[/b]: tentare è gratis! Ogni ramo si usa una volta all'anno. Le carte degli incantesimi compaiono nel pannello a destra: clicca quella che vuoi lanciare.",
+	]
+
+static func guida_magia(fase: String, anno: int) -> Array:
+	if anno == 0:
+		match fase:
+			"province":
+				return ["Scegli prima le tue tre province, come in una partita normale. Il pulsante [b]Consiglio[/b] ti suggerisce sempre una buona scelta."]
+			"re":
+				return ["Ecco il momento più importante per un mago: le [b]abilità del Re[/b]. Ho già preparato tre carte: [b]Magia della mente[/b], [b]Magia degli elementi[/b] e [b]Necromanzia[/b].",
+					"La [b]mente[/b] spia, compra e confonde; gli [b]elementi[/b] scatenano tempeste e tornado; la [b]necromanzia[/b] uccide da lontano e risveglia i morti. L'illusione la impareremo nel libro.",
+					"Le altre carte sono le abilità militari: [i]Marcia[/i] (+1 movimento), [i]Ritirata[/i] (decide le ritirate), [i]Tattica[/i] (sposta la colonna in battaglia). Clicca una carta scelta per toglierla, una disponibile per aggiungerla. Poi [b]Conferma il Re[/b]."]
+	match fase:
+		"tornado":
+			return ["[b]Tornado[/b], magia degli elementi. Scegli una provincia nemica: se riesce, quest'anno [b]non renderà tasse[/b] a nessuno. È gratis, quindi conviene quasi sempre tentarlo sulla provincia più ricca di Re Baxx.",
+				"Clicca la carta [b]Tornado[/b] e poi la provincia sulla mappa. Se il dado fa 1 o 2 vedrai il vortice alzarsi sulla provincia."]
+		"acquisti":
+			return ["Con la magia illusoria si potrebbero comprare [b]unità illusorie[/b] a 1 sequin l'una. Il tuo Re non la conosce, ma un [b]Mago[/b] sì: si assolda in qualsiasi tua provincia, scegliendo il ramo nel menu accanto alla carta.",
+				"Un secondo incantatore raddoppia le tue possibilità: due tentativi all'anno invece di uno. Ma costa 10 sequin e 4 di mantenimento: pensaci!"]
+		"magia1":
+			return ["[b]Prima fase magica[/b]. Qui agiscono necromanzia e mente:\n- [i]Uccidi mago o eroe[/i] (8 sequin): elimina un capo nemico.\n- [i]Uccidi unità[/i] (5 sequin per unità): distrugge truppe in una provincia.\n- [i]Fedeltà[/i] (5 sequin per unità): gli indigeni di una provincia passano con te.",
+				"Ricorda: paghi solo se riesce. [i]Fedeltà[/i] è perfetta nei primi anni: una provincia ricca difesa da indigeni diventa tua senza combattere. Clicca la carta, poi [b]Scegli sulla mappa[/b] e clicca la provincia."]
+		"chiaro":
+			return ["[b]Chiaroveggenza[/b], magia della mente, gratuita. Se riesce, quando scriverai il piano di movimento vedrai le [b]frecce dei piani di Re Baxx[/b]: saprai dove attaccherà e dove resterà sguarnito."]
+		"piano":
+			return ["Mentre scrivi il piano puoi lanciare gli incantesimi della [b]seconda fase magica[/b], che agiscono durante il movimento:\n- [i]Controllo mentale[/i] (mente): un eroe nemico segue il percorso che tracci tu.\n- [i]Mari in tempesta[/i] e [i]Tempesta sui monti[/i] (elementi): due mari o due montagne vicini diventano invalicabili per i nemici.\n- [i]Mare gelato[/i] e [i]Alluvione[/i] (elementi).",
+				"Una buona combinazione: una [i]Tempesta sui monti[/i] davanti all'esercito nemico mentre il tuo attacca dall'altra parte. Trovi le carte in fondo al pannello, sotto gli ordini."]
+		"rivela":
+			return ["[b]Rivela illusioni[/b]: un illusionista può scoprire unità illusorie e forze invisibili in una provincia. Se non ne hai, premi [b]Conferma[/b]."]
+		"magia3":
+			return ["[b]Terza fase magica[/b]: dove si è combattuto, il necromante può tentare il [b]Risveglio dei morti[/b]. Se riesce, tutti i caduti tornano come zombi al tuo servizio; ma con un 6 il rito si ritorce contro di te e perdi unità.",
+				"Il necromante deve trovarsi nella provincia della battaglia. Spunta la casella e conferma: è il rito più spettacolare del gioco!"]
+		"alleanze":
+			return ["Con tre o più re, la mente lancia [i]Discordia[/i] e [i]Armonia[/i] sulle alleanze. Qui siamo in due, quindi non serve."]
+	return []
+
+static func evento_magia(ok: bool, dado: int, nome: String) -> String:
+	var t := "%s: il dado fa [b]%d[/b]. " % [nome, dado]
+	t += "[b]Riuscito![/b] " if ok else "[b]Fallito.[/b] "
+	if dado == 1:
+		t += "E con un 1 il valore magico [b]sale di uno[/b]: d'ora in poi riuscirai più spesso."
+	elif dado == 6:
+		t += "Con un 6 il valore magico [b]scende di uno[/b] (mai sotto 1)."
+	elif ok:
+		t += "Il costo, se c'era, è stato pagato ora."
+	else:
+		t += "Non hai speso nulla: riprova l'anno prossimo."
+	return t
 
 static func evento(t: String) -> String:
 	match t:

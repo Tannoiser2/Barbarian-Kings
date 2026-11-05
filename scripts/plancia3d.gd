@@ -5,6 +5,8 @@ extends Node3D
 
 signal provincia_cliccata(p: int)
 signal provincia_sopra(p: int)
+## Chiede all'interfaccia di mostrare la carta illustrata di un incantesimo o di un'azione.
+signal carta(chiave: String, esito: String)
 
 ## Due mappe: «moderna» (dipinta, verticale, con rilievo e foreste 3D) e «originale» (la mappa SPI del 1980).
 var modalita := "moderna"
@@ -936,6 +938,7 @@ func _esegui_coda() -> void:
 					gruppo.append(_coda.pop_front())
 				await _anima_movimenti(gruppo)
 			"ritirata":
+				carta.emit("fuga", "")
 				await _anima_movimenti([e])
 			"battaglia":
 				await _anima_battaglia(e)
@@ -952,7 +955,17 @@ func _esegui_coda() -> void:
 			"resurrezione":
 				await _anima_resurrezione(e)
 			"cattura":
-				await _attesa(0.3)
+				await _anima_cattura(e)
+			"liberato":
+				_anima_liberato(e)
+			"fedelta":
+				await _anima_fedelta(e)
+			"invisibile":
+				await _anima_invisibile(e)
+			"svelato", "rivela":
+				await _anima_rivela(e)
+			"blocco":
+				_anima_blocco(e)
 			"controllo":
 				_aggiorna_bandiere_dopo()
 			"tasse":
@@ -1024,6 +1037,8 @@ func _anima_movimenti(lista: Array) -> void:
 				_posa_ferma(f)
 
 func _anima_battaglia(e: Dictionary) -> void:
+	carta.emit("battaglia", "")
+	_volume(centro(e["prov"]) + Vector3(0, 0.45, 0), Vector3(2.4, 0.9, 2.4), 2, Color(0.55, 0.47, 0.36), Color(0.95, 0.8, 0.55), 2.6, {"densita": 2.2, "scala_rumore": 4.5})
 	var q: int = e["prov"]
 	inquadra(q, 9.0)
 	await _attesa(0.5)
@@ -1114,10 +1129,18 @@ func _anima_incantesimo(e: Dictionary) -> void:
 		elif ap != null and ap.has_animation("attacco"):
 			ap.play("attacco", 0.1, 1.0 * velocita)
 	var col := _colore_ramo(Dati.INCANTESIMI[e["s"]]["ramo"])
+	carta.emit(e["s"], "riuscito" if e["ok"] else "fallito")
 	_aura(pos, col, 1.4)
+	_volume(pos + Vector3(0, 0.55, 0), Vector3(1.3, 1.3, 1.3), 0, col.darkened(0.2), Color(1, 1, 1), 1.8, {"vortice": 4.0, "densita": 2.5})
+	if e["s"] == "chiaroveggenza" and e["ok"]:
+		_volume(pos + Vector3(0, 1.4, 0), Vector3(0.9, 0.9, 0.9), 4, Color(0.6, 0.7, 1.0), Color(1, 1, 1), 2.0, {"densita": 3.0})
+	elif e["s"] in ["discordia", "armonia"] and e["ok"]:
+		var c2 := Color(0.9, 0.2, 0.15) if e["s"] == "discordia" else Color(1.0, 0.85, 0.4)
+		_volume(pos + Vector3(0, 0.9, 0), Vector3(2.2, 0.6, 2.2), 4, c2, Color(1, 1, 0.9), 2.0, {"densita": 3.0})
 	if not e["ok"]:
 		_etichetta(pos + Vector3(0, 1.0, 0), "fallito", Color(0.8, 0.7, 0.6), 1.5)
-	await _attesa(0.9)
+		_volume(pos + Vector3(0, 0.5, 0), Vector3(0.9, 0.9, 0.9), 3, Color(0.3, 0.3, 0.32), Color(0.6, 0.6, 0.6), 1.4, {"salita": 0.8})
+	await _attesa(1.1)
 	if f != null:
 		_posa_ferma(f)
 
@@ -1132,12 +1155,17 @@ func _colore_ramo(r: String) -> Color:
 func _anima_maledizione(e: Dictionary) -> void:
 	var f: Node3D = figure.get(e["id"])
 	var pos := f.position if f != null else centro(e["prov"])
+	_volume(pos + Vector3(0, 0.7, 0), Vector3(0.9, 1.6, 0.9), 3, Color(0.05, 0.08, 0.04), Color(0.45, 1.0, 0.3), 1.8, {"densita": 4.0, "salita": -0.6, "bagliore": 1.2})
+	await _attesa(0.4)
 	_fulmine(pos, Color(0.6, 1.0, 0.4))
-	await _attesa(0.5)
+	await _attesa(0.6)
 
 func _anima_resurrezione(e: Dictionary) -> void:
 	var c := centro(e["prov"])
 	inquadra(e["prov"], 9.0)
+	carta.emit("resurrezione", "")
+	_volume(c + Vector3(0, 0.25, 0), Vector3(3.0, 0.7, 3.0), 2, Color(0.1, 0.35, 0.12), Color(0.5, 1.0, 0.45), 3.2, {"densita": 3.0, "scala_rumore": 4.0})
+	_volume(c + Vector3(0, 1.0, 0), Vector3(1.4, 2.2, 1.4), 3, Color(0.2, 0.6, 0.2), Color(0.7, 1.0, 0.6), 2.8, {"salita": 0.7})
 	_nebbia(c, Color(0.35, 1.0, 0.4, 0.6), 3.0)
 	_lampo(c + Vector3(0, 0.8, 0), Color(0.3, 1.0, 0.3), 2.5)
 	await _attesa(1.2)
@@ -1151,6 +1179,89 @@ func _anima_tasse(e: Dictionary) -> void:
 		return
 	_etichetta(f.position + Vector3(0, 1.0, 0), "+%d" % e["q"], Color(1.0, 0.85, 0.3), 2.0)
 	_monete(f.position + Vector3(0, 0.6, 0))
+
+func _pos_unita(id: int, q: int) -> Vector3:
+	var f: Node3D = figure.get(id)
+	return f.position if f != null else centro(q)
+
+func _anima_cattura(e: Dictionary) -> void:
+	carta.emit("cattura", "")
+	var pos := _pos_unita(e["id"], e["prov"])
+	_volume(pos + Vector3(0, 0.7, 0), Vector3(1.1, 1.6, 1.1), 1, Color(0.3, 0.08, 0.06), Color(0.9, 0.3, 0.15), 1.8, {"vortice": -4.0, "densita": 3.0})
+	await _attesa(1.0)
+
+func _anima_liberato(e: Dictionary) -> void:
+	var q: int = m.u[e["id"]]["prov"] if m != null and m.u.has(e["id"]) else 0
+	if q <= 0:
+		return
+	carta.emit("liberazione", "")
+	_volume(_pos_unita(e["id"], q) + Vector3(0, 0.9, 0), Vector3(1.0, 1.9, 1.0), 3, Color(0.9, 0.7, 0.25), Color(1, 1, 0.85), 2.0, {"salita": 0.8})
+
+func _anima_fedelta(e: Dictionary) -> void:
+	var pos := _pos_unita(e["id"], e["prov"])
+	_volume(pos + Vector3(0, 0.55, 0), Vector3(1.2, 1.2, 1.2), 0, Color(0.95, 0.75, 0.25), Color(1, 1, 0.8), 2.0, {"vortice": 3.0, "densita": 3.0})
+	_lampo(pos + Vector3(0, 0.8, 0), Color(1.0, 0.85, 0.4), 1.5)
+	await _attesa(0.9)
+
+func _anima_invisibile(e: Dictionary) -> void:
+	var ids: Array = e.get("ids", [])
+	if ids.is_empty():
+		return
+	var q: int = m.u[ids[0]]["prov"] if m != null and m.u.has(ids[0]) else 0
+	if q <= 0:
+		return
+	_volume(centro(q) + Vector3(0, 0.6, 0), Vector3(2.0, 1.3, 2.0), 0, Color(0.7, 0.55, 0.95, 0.8), Color(1, 1, 1), 1.8, {"vortice": 2.0, "densita": 2.0, "scala_rumore": 6.0})
+	await _attesa(0.8)
+
+func _anima_rivela(e: Dictionary) -> void:
+	var q: int = e.get("prov", 0)
+	if q <= 0:
+		return
+	_volume(centro(q) + Vector3(0, 0.4, 0), Vector3(3.0, 0.5, 3.0), 4, Color(0.95, 0.8, 1.0), Color(1, 1, 1), 1.6, {"densita": 3.5})
+	_lampo(centro(q) + Vector3(0, 1.0, 0), Color(1.0, 0.9, 1.0), 1.2)
+	await _attesa(0.7)
+
+func _anima_blocco(e: Dictionary) -> void:
+	var q: int = e.get("prov", 0)
+	if q <= 0:
+		return
+	carta.emit("blocco", "")
+	_volume(centro(q) + Vector3(0, 0.3, 0), Vector3(2.0, 0.5, 2.0), 4, Color(0.75, 0.2, 0.1), Color(1.0, 0.7, 0.4), 1.4, {"densita": 3.0})
+
+# ---------------------------------------------------------------- effetti volumetrici (nebbie e vortici disegnati dallo shader)
+
+var _shader_volume: Shader
+
+## Un volume di nebbia animata. forma: 0 sfera, 1 vortice, 2 nube piatta, 3 colonna, 4 anello.
+## durata <= 0: resta finché non si toglie il nodo genitore (effetti che durano tutto l'anno).
+func _volume(pos: Vector3, dim: Vector3, forma: int, c1: Color, c2: Color, durata: float, opz := {}, genitore: Node3D = null) -> MeshInstance3D:
+	if _shader_volume == null:
+		_shader_volume = load("res://scripts/volume.gdshader")
+	var mi := MeshInstance3D.new()
+	var bm := BoxMesh.new()
+	bm.size = Vector3.ONE
+	mi.mesh = bm
+	mi.scale = dim
+	mi.position = pos
+	mi.cast_shadow = GeometryInstance3D.SHADOW_CASTING_SETTING_OFF
+	var mat := ShaderMaterial.new()
+	mat.shader = _shader_volume
+	mat.set_shader_parameter("colore", c1)
+	mat.set_shader_parameter("colore2", c2)
+	mat.set_shader_parameter("forma", forma)
+	mat.set_shader_parameter("seme", randf() * 50.0)
+	for k in opz:
+		mat.set_shader_parameter(k, opz[k])
+	mat.set_shader_parameter("dissolvenza", 0.0)
+	mi.material_override = mat
+	(genitore if genitore != null else self).add_child(mi)
+	var tw := create_tween()
+	tw.tween_method(func(v: float): mat.set_shader_parameter("dissolvenza", v), 0.0, 1.0, 0.35 / velocita)
+	if durata > 0.0:
+		tw.tween_interval(maxf(0.1, durata - 0.8) / velocita)
+		tw.tween_method(func(v: float): mat.set_shader_parameter("dissolvenza", v), 1.0, 0.0, 0.45 / velocita)
+		tw.tween_callback(mi.queue_free)
+	return mi
 
 # ---------------------------------------------------------------- effetti speciali (particelle CPU, vanno anche sul web)
 
@@ -1309,6 +1420,7 @@ func _effetto_persistente(s: String, q: int) -> void:
 				p.emission_ring_height = 0.05
 				p.orbit_velocity_min = 1.2
 				p.orbit_velocity_max = 1.6
+			_volume(Vector3(0, 1.4, 0), Vector3(1.8, 2.8, 1.8), 1, Color(0.42, 0.38, 0.33), Color(0.85, 0.8, 0.72), 0.0, {"vortice": 5.0, "densita": 3.0, "salita": 0.9}, radice)
 			_lampo(c + Vector3(0, 1, 0), Color(0.8, 0.8, 0.7), 1.5)
 		"tempesta_mari", "tempesta_monti":
 			var p := _particelle(Vector3(0, 2.2, 0), 120, Color(0.7, 0.8, 1.0, 0.6), 0.8, 0.2, Vector3(0, -9, 0), 0.7, false)
@@ -1321,6 +1433,7 @@ func _effetto_persistente(s: String, q: int) -> void:
 			nube.position = Vector3(0, 2.4, 0)
 			nube.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
 			nube.emission_box_extents = Vector3(1.0, 0.1, 1.0)
+			_volume(Vector3(0, 2.4, 0), Vector3(3.2, 0.9, 3.2), 2, Color(0.16, 0.17, 0.22), Color(0.55, 0.6, 0.7), 0.0, {"densita": 4.0, "scala_rumore": 3.5}, radice)
 			_fulmine(c, Color(0.8, 0.9, 1.0))
 		"gelo":
 			var disco := MeshInstance3D.new()
@@ -1344,6 +1457,7 @@ func _effetto_persistente(s: String, q: int) -> void:
 			neve.position = Vector3(0, 2, 0)
 			neve.emission_shape = CPUParticles3D.EMISSION_SHAPE_BOX
 			neve.emission_box_extents = Vector3(1.3, 0.1, 1.3)
+			_volume(Vector3(0, 0.3, 0), Vector3(3.2, 0.6, 3.2), 2, Color(0.75, 0.88, 1.0), Color(1, 1, 1), 0.0, {"densita": 2.0, "scala_rumore": 5.0}, radice)
 		"alluvione":
 			var acqua := MeshInstance3D.new()
 			var cy2 := CylinderMesh.new()
@@ -1352,7 +1466,7 @@ func _effetto_persistente(s: String, q: int) -> void:
 			cy2.height = 0.02
 			acqua.mesh = cy2
 			var ma := StandardMaterial3D.new()
-			ma.albedo_color = Color(0.2, 0.45, 0.75, 0.6)
+			ma.albedo_color = Color(0.2, 0.45, 0.75, 0.35)
 			ma.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 			ma.roughness = 0.05
 			ma.metallic = 0.3
@@ -1360,9 +1474,11 @@ func _effetto_persistente(s: String, q: int) -> void:
 			acqua.position = Vector3(0, 0.0, 0)
 			radice.add_child(acqua)
 			create_tween().tween_property(acqua, "position:y", 0.16, 1.2 / velocita)
+			_volume(Vector3(0, 0.35, 0), Vector3(3.0, 0.5, 3.0), 2, Color(0.35, 0.5, 0.65), Color(0.85, 0.92, 1.0), 0.0, {"densita": 1.6, "scala_rumore": 5.0}, radice)
 			_spruzzo(c)
 		"controllo":
 			_aura(c, Color(0.55, 0.65, 1.0), 2.0)
+			_volume(Vector3(0, 0.8, 0), Vector3(1.4, 1.4, 1.4), 0, Color(0.85, 0.35, 0.85), Color(0.6, 0.75, 1.0), 2.4, {"vortice": 6.0, "densita": 3.0}, radice)
 
 func _pulisci_effetti() -> void:
 	for q in _effetti_prov:

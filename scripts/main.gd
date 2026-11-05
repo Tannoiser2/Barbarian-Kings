@@ -67,6 +67,7 @@ var _prov_info := 0
 
 # partita guidata
 var tutorial := false
+var tutorial_tipo := "base"     # "base" (partita guidata) o "magia" (scuola di magia)
 var tut_visti: Dictionary = {}
 
 # stato dei pannelli
@@ -89,6 +90,7 @@ func _ready() -> void:
 	plancia.provincia_cliccata.connect(_su_click_provincia)
 	plancia.provincia_sopra.connect(_su_sopra_provincia)
 	plancia.regia_finita.connect(_dopo_regia)
+	plancia.carta.connect(_mostra_carta)
 	ui = CanvasLayer.new()
 	add_child(ui)
 	radice_ui = Control.new()
@@ -408,7 +410,16 @@ func _menu() -> void:
 	g.custom_minimum_size = Vector2(0, 54)
 	g.tooltip_text = "Una vera partita contro Re Baxx: il Saggio ti spiega ogni fase, passo per passo."
 	v.add_child(g)
-	v.add_child(_veste(_bottone("Come si gioca: il libro delle regole", func(): _libro(0), 19), "secondario"))
+	var hg := HBoxContainer.new()
+	hg.add_theme_constant_override("separation", 8)
+	var sm := _veste(_bottone("Scuola di magia", func(): _avvia_tutorial("magia"), 18), "verde")
+	sm.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	sm.tooltip_text = "Il tuo Re conosce tre rami di magia: il Saggio ti insegna ogni incantesimo e ogni abilità, dado per dado."
+	hg.add_child(sm)
+	var lb := _veste(_bottone("Come si gioca", func(): _libro(0), 18), "secondario")
+	lb.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hg.add_child(lb)
+	v.add_child(hg)
 	_divisore(v)
 	v.add_child(_bottone("Nuova partita", _impostazioni_locali, 21))
 	v.add_child(_bottone("Gioca online con gli amici", _menu_online, 21))
@@ -518,14 +529,25 @@ func _libro(cap: int) -> void:
 	var lt := _etichetta("Come si gioca", 30, true)
 	indice.add_child(lt)
 	_divisore(indice)
+	var isc := ScrollContainer.new()
+	isc.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	isc.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	indice.add_child(isc)
+	var elenco := VBoxContainer.new()
+	elenco.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	elenco.add_theme_constant_override("separation", 0)
+	isc.add_child(elenco)
 	for i in capitoli.size():
 		var b := Button.new()
 		b.text = "%d. %s" % [i + 1, capitoli[i]["titolo"]]
 		b.flat = true
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.add_theme_font_override("font", font_testo)
-		b.add_theme_font_size_override("font_size", 16)
+		b.add_theme_font_size_override("font_size", 15)
 		b.add_theme_constant_override("outline_size", 0)
+		b.add_theme_stylebox_override("normal", StyleBoxEmpty.new())
+		b.add_theme_stylebox_override("hover", StyleBoxEmpty.new())
+		b.add_theme_stylebox_override("pressed", StyleBoxEmpty.new())
 		b.add_theme_color_override("font_color", ROSSO_TITOLO if i == cap else INCHIOSTRO)
 		b.add_theme_color_override("font_hover_color", ROSSO_TITOLO)
 		b.add_theme_color_override("font_pressed_color", ROSSO_TITOLO)
@@ -533,11 +555,10 @@ func _libro(cap: int) -> void:
 		if i == cap:
 			b.add_theme_font_override("font", font_bottone)
 		b.pressed.connect(_libro.bind(i))
-		indice.add_child(b)
-	var sp := Control.new()
-	sp.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	indice.add_child(sp)
-	indice.add_child(_veste(_bottone("Gioca la partita guidata", _avvia_tutorial, 16), "verde") if m == null else Control.new())
+		elenco.add_child(b)
+	if m == null:
+		indice.add_child(_veste(_bottone("Partita guidata", func(): _avvia_tutorial("base"), 15), "verde"))
+		indice.add_child(_veste(_bottone("Scuola di magia", func(): _avvia_tutorial("magia"), 15), "verde"))
 	indice.add_child(_bottone("Chiudi il libro", (func(): _menu()) if m == null else _chiudi_sovrapposto, 17))
 	# pagina
 	var dx := VBoxContainer.new()
@@ -1074,6 +1095,7 @@ func _vittoria() -> void:
 	_svuota_pannello()
 	var p := m.vincitore
 	titolo_pannello.text = "La Pace del Re"
+	_mostra_carta("vittoria", "")
 	contenuto.add_child(_rtl("%s controlla province per %d sequin di tasse e mette fine all'Età Rossa di Castafon dopo %d anni." % [_nome_colore(p), m.tasse_di(p), m.turno - 1]))
 	for q in m.n:
 		contenuto.add_child(_rtl("%s: tasse %d, tesoro %d" % [_nome_colore(q), m.tasse_di(q), m.g[q]["tesoro"]]))
@@ -1186,6 +1208,14 @@ func _intestazione(p: int, titolo: String, spiega: String) -> void:
 	titolo_pannello.tooltip_text = "Decide " + m.g[p]["nome"]
 	spiega_pannello.text = spiega
 	spiega_pannello.visible = spiega != ""
+	var k := _carta_fase(m.fase)
+	if k != "" and Carte.ha_immagine(k):
+		var img := TextureRect.new()
+		img.texture = Carte.tex(k)
+		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+		img.custom_minimum_size = Vector2(0, 120)
+		contenuto.add_child(img)
 
 ## Il pulsante principale, sempre in fondo al pannello, accanto al consiglio del Saggio.
 func _conferma(testo: String, f: Callable) -> void:
@@ -1256,21 +1286,74 @@ func _p_re(p: int) -> void:
 			st["prov"] = q
 			l.text = "Il Re va in: " + Dati.nome_prov(q)
 			plancia.evidenzia(mie, {q: C_SCELTA})
-	var scelte := Dati.ABILITA_EROE + Dati.RAMI
-	var obs := []
-	for i in 3:
-		var ob := OptionButton.new()
-		for a in scelte:
-			ob.add_item(Dati.NOMI_ABILITA[a])
-		ob.selected = [2, 2, 3][i] if i < 3 else 0
-		contenuto.add_child(ob)
-		obs.append(ob)
-	contenuto.add_child(_rtl("[i]Marcia[/i]: +1 al movimento del Re e delle unità che guida. [i]Ritirata[/i]: decide le ritirate. [i]Tattica[/i]: sposta di una colonna la tabella del combattimento. I quattro rami di magia danno un valore magico 2 ciascuno.", 15))
+	contenuto.add_child(_etichetta("Le tre abilità del Re", 19, true))
+	contenuto.add_child(_etichetta("Clicca una carta per aggiungerla (anche più volte); clicca una carta scelta per toglierla.", 15, false, Color(INCHIOSTRO, 0.8)))
+	st["abil"] = ["mente", "elementi", "necromanzia"] if tutorial_tipo == "magia" else ["tattica", "tattica", "mente"]
+	var scelte_box := HBoxContainer.new()
+	scelte_box.add_theme_constant_override("separation", 6)
+	contenuto.add_child(scelte_box)
+	var descr := _rtl("", 15)
+	var agg := func():
+		for c in scelte_box.get_children():
+			c.queue_free()
+		for i in 3:
+			if i < st["abil"].size():
+				var k: String = st["abil"][i]
+				var b := _bottone_carta(k, 74, false)
+				b.tooltip_text = "Togli " + Carte.titolo(k)
+				b.pressed.connect(func():
+					st["abil"].remove_at(i)
+					st["agg_abil"].call())
+				scelte_box.add_child(b)
+			else:
+				var vuota := PanelContainer.new()
+				vuota.custom_minimum_size = Vector2(74, 128)
+				vuota.add_theme_stylebox_override("panel", _stile(Color(0.3, 0.2, 0.1, 0.15), Color(BORDO, 0.5), 1, 6, 4))
+				scelte_box.add_child(vuota)
+		var t := ""
+		for k in st["abil"]:
+			t += "[b]%s[/b]: %s\n" % [Carte.titolo(k), Carte.descrizione(k)]
+		descr.text = t
+	st["agg_abil"] = agg
+	contenuto.add_child(_etichetta("Abilità disponibili", 17, true))
+	var griglia := HFlowContainer.new()
+	griglia.add_theme_constant_override("h_separation", 6)
+	griglia.add_theme_constant_override("v_separation", 6)
+	contenuto.add_child(griglia)
+	for k in Carte.ABILITA:
+		var b := _bottone_carta(k, 82, true)
+		b.pressed.connect(func():
+			if st["abil"].size() < 3:
+				st["abil"].append(k)
+				st["agg_abil"].call())
+		griglia.add_child(b)
+	contenuto.add_child(descr)
+	agg.call()
 	_conferma("Conferma il Re", func():
-		var ab := []
-		for ob in obs:
-			ab.append(scelte[ob.selected])
-		_applica(p, {"prov": st["prov"], "abil": ab}))
+		_applica(p, {"prov": st["prov"], "abil": st["abil"].duplicate()}))
+
+## Una carta illustrata cliccabile: immagine (o stemma provvisorio) e nome sotto.
+func _bottone_carta(k: String, larg := 82, con_nome := true, sotto := "") -> Button:
+	var b := Button.new()
+	b.icon = Carte.tex(k)
+	b.expand_icon = true
+	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	b.custom_minimum_size = Vector2(larg, larg * 1.5 + (30 if con_nome else 0))
+	b.text = (Carte.titolo(k) + ("\n" + sotto if sotto != "" else "")) if con_nome else ""
+	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	b.add_theme_font_size_override("font_size", 12)
+	b.add_theme_constant_override("outline_size", 2)
+	var col := Carte.colore(k)
+	var n := _stile(Color(0.13, 0.08, 0.05, 0.92), col.darkened(0.25), 2, 6, 4)
+	var h := _stile(Color(0.2, 0.13, 0.08, 0.95), col, 3, 6, 4)
+	var sel := _stile(Color(0.12, 0.3, 0.1, 0.95), Color(0.95, 0.84, 0.5), 3, 6, 4)
+	b.add_theme_stylebox_override("normal", n)
+	b.add_theme_stylebox_override("hover", h)
+	b.add_theme_stylebox_override("pressed", sel)
+	b.add_theme_stylebox_override("hover_pressed", sel)
+	b.tooltip_text = "%s\n%s" % [Carte.titolo(k), Carte.descrizione(k)]
+	return b
 
 func _p_alleanze(p: int) -> void:
 	_intestazione(p, "Alleanze dell'anno", "Firma con chi vuoi allearti: l'alleanza nasce solo se anche l'altro firma con te. Gli alleati non si bloccano e combattono insieme. Puoi anche versare sequin (patti, tributi, riscatti).")
@@ -1320,16 +1403,37 @@ func _scelte_incantesimi(p: int, rami: Array, spells: Array, _modo := "") -> Arr
 		var ammessi := spells.filter(func(s): return Dati.INCANTESIMI[s]["ramo"] == sl["r"])
 		var tit := _etichetta("%s - %s (valore %d)" % [Dati.nome_unita(sl["c"]), Dati.NOMI_ABILITA[sl["r"]], sl["v"]], 16, true)
 		box.add_child(tit)
+		var prob := _etichetta("Riesce con un dado da 1 a %d: %d probabilità su 6." % [sl["v"], sl["v"]], 14, false, BORDO)
+		prob.add_theme_font_override("font", font_corsivo)
+		box.add_child(prob)
 		var ob := OptionButton.new()
 		ob.add_item("Nessun incantesimo")
 		for s in ammessi:
 			var costo: int = Dati.INCANTESIMI[s]["costo"]
 			ob.add_item(Dati.INCANTESIMI[s]["nome"] + ("" if costo == 0 else " (%d seq.)" % costo))
+		ob.visible = false
 		box.add_child(ob)
+		var fila := HFlowContainer.new()
+		fila.add_theme_constant_override("h_separation", 6)
+		fila.add_theme_constant_override("v_separation", 6)
+		box.add_child(fila)
 		var dett := VBoxContainer.new()
 		box.add_child(dett)
 		var riga := {"slot": sl, "ob": ob, "ammessi": ammessi, "dett": dett, "dati": {}}
-		ob.item_selected.connect(func(i: int): _dettagli_incantesimo(p, riga))
+		var bottoni := []
+		for j in ammessi.size():
+			var sp: String = ammessi[j]
+			var costo2: int = Dati.INCANTESIMI[sp]["costo"]
+			var bc := _bottone_carta(sp, 78, true, "%d seq." % costo2 if costo2 > 0 else "")
+			bc.toggle_mode = true
+			bc.pressed.connect(func():
+				var gia: bool = ob.selected == j + 1
+				ob.selected = 0 if gia else j + 1
+				for k2 in bottoni.size():
+					bottoni[k2].set_pressed_no_signal(ob.selected == k2 + 1)
+				_dettagli_incantesimo(p, riga))
+			bottoni.append(bc)
+			fila.add_child(bc)
 		righe.append(riga)
 	return righe
 
@@ -1927,7 +2031,9 @@ func _riprendi(d) -> void:
 		gioc.append({"nome": str(gc["nome"]), "ia": bool(gc["ia"])})
 	c["giocatori"] = gioc
 	c["seme"] = int(c["seme"])
-	tutorial = bool(c.get("tutorial", false))
+	var tt = c.get("tutorial", false)
+	tutorial = tt is String or bool(tt)
+	tutorial_tipo = tt if tt is String else "base"
 	tut_visti = {"intro": true}
 	_inizia(c, d.get("dec", []))
 
@@ -2137,6 +2243,68 @@ func _ciclo_online() -> void:
 			_passo()
 		rete.heartbeat(codice, maxi(0, posto_stanza))
 
+# ---------------------------------------------------------------- carte illustrate in sovrimpressione
+
+var _carta_vista: Control
+
+## Mostra per un attimo la carta di un incantesimo o di un'azione mentre la regia la anima sulla mappa.
+## Le azioni comuni (battaglie) compaiono solo se esiste la loro illustrazione.
+func _mostra_carta(k: String, esito: String) -> void:
+	if radice_ui == null or m == null:
+		return
+	if not Dati.INCANTESIMI.has(k) and not Carte.ha_immagine(k) and not (k in ["cattura", "liberazione", "vittoria"]):
+		return
+	if _carta_vista != null and is_instance_valid(_carta_vista):
+		_carta_vista.queue_free()
+	var pc := PanelContainer.new()
+	pc.add_theme_stylebox_override("panel", _stile_tex("pergamena", 26, 16, 14))
+	pc.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var v := VBoxContainer.new()
+	v.add_theme_constant_override("separation", 4)
+	pc.add_child(v)
+	var img := TextureRect.new()
+	img.texture = Carte.tex(k)
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	img.custom_minimum_size = Vector2(170, 255)
+	v.add_child(img)
+	var t := _etichetta(Carte.titolo(k), 24, true)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.autowrap_mode = TextServer.AUTOWRAP_OFF
+	v.add_child(t)
+	if esito != "":
+		var e := _etichetta(esito.capitalize(), 17, false, Color(0.15, 0.45, 0.1) if esito == "riuscito" else Color(0.65, 0.1, 0.05))
+		e.add_theme_font_override("font", font_bottone)
+		e.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		e.autowrap_mode = TextServer.AUTOWRAP_OFF
+		v.add_child(e)
+	radice_ui.add_child(pc)
+	pc.reset_size()
+	var vp := radice_ui.get_viewport_rect().size
+	pc.position = Vector2((vp.x - 440) * 0.5 - pc.size.x * 0.5, 104)
+	pc.pivot_offset = pc.size * 0.5
+	pc.scale = Vector2(0.6, 0.6)
+	pc.modulate.a = 0.0
+	var vel := maxf(plancia.velocita, 1.0)
+	var tw := pc.create_tween()
+	tw.set_parallel(true)
+	tw.tween_property(pc, "scale", Vector2.ONE, 0.35 / vel).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(pc, "modulate:a", 1.0, 0.25 / vel)
+	tw.chain().tween_interval(1.8 / vel)
+	tw.chain().tween_property(pc, "modulate:a", 0.0, 0.4 / vel)
+	tw.chain().tween_callback(pc.queue_free)
+	_carta_vista = pc
+
+## Fase -> carta d'azione usata come illustrazione in testa al pannello (solo se l'immagine esiste).
+func _carta_fase(f: String) -> String:
+	match f:
+		"alleanze": return "alleanza"
+		"finanze": return "tasse"
+		"acquisti": return "reclutamento"
+		"piano": return "piano"
+		"battaglia": return "battaglia"
+	return ""
+
 # ---------------------------------------------------------------- il Saggio: consigli e partita guidata
 
 var _saggio_pagine: Array = []
@@ -2309,12 +2477,40 @@ func _consiglio(p: int) -> void:
 				["Segui il consiglio", func(): _chiudi_saggio(); _applica(p, d), "verde"],
 				["Decido io", _chiudi_saggio, "secondario"]])
 
-func _avvia_tutorial() -> void:
+## Per la scuola di magia: chi può lanciare in questa fase, con che probabilità, e cosa consiglierei.
+func _info_incantatori(p: int) -> String:
+	var spells := []
+	for sp in Dati.INCANTESIMI:
+		var f: String = Dati.INCANTESIMI[sp]["fase"]
+		if f == m.fase or (m.fase == "piano" and f == "piano"):
+			spells.append(sp)
+	if spells.is_empty():
+		return ""
+	var righe := []
+	var visti := {}
+	for sp in spells:
+		var r: String = Dati.INCANTESIMI[sp]["ramo"]
+		if visti.has(r):
+			continue
+		visti[r] = true
+		for sl in m.slot_magia(p, r):
+			righe.append("%s, %s: valore [b]%d[/b], riesce %d volte su 6" % [Dati.nome_unita(sl["c"]), Dati.NOMI_ABILITA[r], sl["v"], sl["v"]])
+	if righe.is_empty():
+		return "In questa fase nessuno dei tuoi incantatori può lanciare: premi [b]Conferma[/b] e passa oltre."
+	var t := "I tuoi incantatori adesso:\n" + "\n".join(righe)
+	var d := IA.decidi(m, p)
+	var inc: Array = d.get("incanti", [])
+	if not inc.is_empty():
+		t += "\nIo tenterei: " + "; ".join(inc.map(func(x): return _descr_incanto(x))) + ". Premi [b]Consiglio[/b] se vuoi che lo prepari io."
+	return t
+
+func _avvia_tutorial(tipo := "base") -> void:
 	online = false
 	umani_locali = [0]
 	tutorial = true
+	tutorial_tipo = tipo
 	tut_visti = {}
-	_inizia({"giocatori": [{"nome": "Tu", "ia": false}, {"nome": "Re Baxx", "ia": true}], "seme": 1980, "tutorial": true}, [])
+	_inizia({"giocatori": [{"nome": "Tu", "ia": false}, {"nome": "Re Baxx", "ia": true}], "seme": 1980 if tipo == "base" else 1313, "tutorial": tipo}, [])
 
 ## In partita guidata, il Saggio spiega ogni fase la prima volta in ciascuno dei primi tre anni.
 func _guida_fase(p: int) -> void:
@@ -2328,12 +2524,20 @@ func _guida_fase(p: int) -> void:
 		return
 	var chiave := "%s|%d" % [m.fase, m.turno]
 	var pagine := []
+	var magia := tutorial_tipo == "magia"
 	if not tut_visti.has("intro"):
 		tut_visti["intro"] = true
-		pagine += Tutorial.intro()
+		pagine += Tutorial.intro_magia() if magia else Tutorial.intro()
 	if not tut_visti.has(chiave):
 		tut_visti[chiave] = true
-		pagine += Tutorial.guida(m.fase, m.turno)
+		if magia:
+			var gm := Tutorial.guida_magia(m.fase, m.turno)
+			pagine += gm if not gm.is_empty() else Tutorial.guida(m.fase, mini(m.turno, 2))
+			var inf := _info_incantatori(p)
+			if inf != "":
+				pagine.append(inf)
+		else:
+			pagine += Tutorial.guida(m.fase, m.turno)
 	# suggerimenti concreti per le scelte iniziali
 	if m.fase == "province":
 		var d := IA.decidi(m, p)
@@ -2365,6 +2569,10 @@ func _guida_eventi(nuovi: Array) -> void:
 			var na: String = "gli indigeni" if int(e["a"]) < 0 else m.g[int(e["a"])]["nome"]
 			var nb: String = "gli indigeni" if int(e["b"]) < 0 else m.g[int(e["b"])]["nome"]
 			_saggio(["Guarda la battaglia in [b]%s[/b]: %s (forza %d) contro %s (forza %d). Il rapporto dà la colonna [b]%s[/b]; il dado fa [b]%d[/b] e la tabella dice [b]%s[/b]: %s." % [Dati.nome_prov(int(e["prov"])), na, int(e["fa"]), nb, int(e["fb"]), e["col"], int(e["dado"]), e["ris"], m._testo_ris(e["ris"], e["grande_a"], na, nb)]], [], "evento")
+			continue
+		if t == "incantesimo" and tutorial_tipo == "magia" and m.turno <= 3:
+			var nome := "%s lancia [i]%s[/i]" % [Dati.nome_unita(int(e["c"])), Dati.INCANTESIMI[e["s"]]["nome"]]
+			_saggio([Tutorial.evento_magia(bool(e["ok"]), int(e["dado"]), nome)], [], "evento")
 			continue
 		var testo := Tutorial.evento(t)
 		if testo != "":

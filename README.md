@@ -17,6 +17,13 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   primi tre anni, suggerisce le scelte e commenta la prima battaglia, il primo blocco, la prima cattura.
 - **Libro "Come si gioca"** in dodici capitoli illustrati con le pedine originali: scopo, mappa, pedine, anno di
   gioco, denaro, movimento, combattimento con la tabella dei risultati, magia, alleanze, comandi, consigli.
+- **Scuola di magia**: una partita guidata in cui il Re conosce mente, elementi e necromanzia; il Saggio spiega
+  ogni incantesimo quando si può lanciare, con valori e probabilità, e commenta ogni tiro di dado.
+- **Carte illustrate** per incantesimi, abilità e azioni (scelta a carte nel pannello, carta in sovrimpressione
+  durante la regia). Le illustrazioni si creano con ChatGPT seguendo `docs/immagini_chatgpt.md` e vanno in
+  `assets/img/carte/`; finché mancano si vedono stemmi provvisori.
+- **Effetti volumetrici** (`scripts/volume.gdshader`): vortici, nubi, nebbie e colonne di luce per magie,
+  tornado, tempeste, gelo, alluvioni, maledizioni, risvegli, catture e battaglie.
 - **Consiglio del Saggio** in ogni fase: l'IA propone la mossa e la spiega; nel reclutamento riempie l'ordine e nel
   movimento traccia i percorsi, che si possono ritoccare prima di confermare.
 - **Pedine originali** sulla mappa SPI (predefinita), in pile per proprietario. Il tasto **3D** le trasforma in
