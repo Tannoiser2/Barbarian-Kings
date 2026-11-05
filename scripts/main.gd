@@ -2360,7 +2360,7 @@ func _mostra_carta(k: String, esito: String) -> void:
 	img.texture = Carte.tex(k, true)
 	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	img.custom_minimum_size = Vector2(330, 220)
+	img.custom_minimum_size = Vector2(300, 200)
 	v.add_child(img)
 	var t := _etichetta(Carte.titolo(k), 24, true)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -2375,8 +2375,12 @@ func _mostra_carta(k: String, esito: String) -> void:
 	radice_ui.add_child(pc)
 	pc.reset_size()
 	var vp := radice_ui.get_viewport_rect().size
-	pc.position = Vector2((vp.x - 440) * 0.5 - pc.size.x * 0.5, 104)
-	pc.pivot_offset = pc.size * 0.5
+	# in basso a sinistra, al posto della cronaca, per non coprire la mappa
+	pc.position = Vector2(6, vp.y - 6 - pc.size.y)
+	pc.pivot_offset = Vector2(0, pc.size.y)
+	var cronaca_vis := diario_box != null and is_instance_valid(diario_box) and diario_box.visible
+	if cronaca_vis:
+		diario_box.visible = false
 	pc.scale = Vector2(0.6, 0.6)
 	pc.modulate.a = 0.0
 	var vel := maxf(plancia.velocita, 1.0)
@@ -2386,7 +2390,10 @@ func _mostra_carta(k: String, esito: String) -> void:
 	tw.tween_property(pc, "modulate:a", 1.0, 0.25 / vel)
 	tw.chain().tween_interval(1.8 / vel)
 	tw.chain().tween_property(pc, "modulate:a", 0.0, 0.4 / vel)
-	tw.chain().tween_callback(pc.queue_free)
+	tw.chain().tween_callback(func():
+		pc.queue_free()
+		if cronaca_vis and is_instance_valid(diario_box) and not (saggio_box != null and is_instance_valid(saggio_box) and saggio_box.visible):
+			diario_box.visible = true)
 	_carta_vista = pc
 
 ## Fase -> carta d'azione usata come illustrazione in testa al pannello (solo se l'immagine esiste).
