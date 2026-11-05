@@ -1547,13 +1547,14 @@ func combatti(q: int, a: int, b: int) -> void:
 
 func _testo_ris(ris: String, grande_a: bool, na: String, nb: String) -> String:
 	var chi := (na if grande_a else nb) if ris[0] == "L" else (nb if grande_a else na)
+	var plur := chi.ends_with("indigeni")
 	match ris.substr(1):
 		"e":
-			return "%s viene annientato" % chi
+			return ("%s vengono annientati" if plur else "%s viene annientato") % chi
 		"me":
-			return "%s perde metà delle forze" % chi
+			return ("%s perdono metà delle forze" if plur else "%s perde metà delle forze") % chi
 		"r":
-			return "%s deve ritirarsi" % chi
+			return ("%s devono ritirarsi" if plur else "%s deve ritirarsi") % chi
 	return ris
 
 func _cade(id: int, q: int) -> void:
