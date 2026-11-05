@@ -99,6 +99,8 @@ func _ready() -> void:
 	radice_ui.set_anchors_preset(Control.PRESET_FULL_RECT)
 	radice_ui.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	radice_ui.theme = tema
+	# le immagini (pedine, carte) si rimpiccioliscono con le mipmap: nitide a qualsiasi scala dello schermo
+	radice_ui.texture_filter = CanvasItem.TEXTURE_FILTER_LINEAR_WITH_MIPMAPS
 	ui.add_child(radice_ui)
 	rete = Rete.new()
 	add_child(rete)
@@ -741,7 +743,8 @@ func _costruisci_gioco() -> void:
 	piede.add_theme_constant_override("separation", 8)
 	colonna.add_child(piede)
 	btn_saggio = _veste(_bottone("Consiglio", func(): _consiglio(giocatore_ui), 16), "secondario")
-	btn_saggio.icon = _icona_saggio()
+	btn_saggio.icon = _tex("saggio")
+	btn_saggio.add_theme_constant_override("icon_max_width", 30)
 	btn_saggio.expand_icon = false
 	btn_saggio.tooltip_text = "Il Saggio suggerisce una mossa e ti spiega perché."
 	piede.add_child(btn_saggio)
@@ -841,17 +844,10 @@ func _costruisci_gioco() -> void:
 
 var _icone_ped := {}
 
-## Pedina illustrata rimpicciolita, da usare come icona nei pulsanti dei menu.
-func _icona_pedina(id: int, lato := 36) -> Texture2D:
-	var k := "%d|%d" % [id, lato]
-	if not _icone_ped.has(k):
-		var perc := Dati.img_pedina(id, true)
-		if perc == "":
-			return null
-		var img: Image = (load(perc) as Texture2D).get_image()
-		img.resize(lato, lato, Image.INTERPOLATE_LANCZOS)
-		_icone_ped[k] = ImageTexture.create_from_image(img)
-	return _icone_ped[k]
+## Pedina illustrata per le icone dei menu: la texture intera (con mipmap), il lato lo fissa icon_max_width.
+func _icona_pedina(id: int, _lato := 36) -> Texture2D:
+	var perc := Dati.img_pedina(id, true)
+	return load(perc) if perc != "" else null
 
 var _icona_s: Texture2D
 func _icona_saggio() -> Texture2D:
@@ -1968,6 +1964,7 @@ func _lista_capi(p: int) -> void:
 		var b := _bottone(t, func(): _seleziona_capo(p, id), 15)
 		b.alignment = HORIZONTAL_ALIGNMENT_LEFT
 		b.icon = _icona_pedina(id, 36)
+		b.add_theme_constant_override("icon_max_width", 40)
 		if id == st["sel"]:
 			_veste(b, "verde")
 		lista.add_child(b)
@@ -2003,6 +2000,7 @@ func _seleziona_capo(p: int, capo: int) -> void:
 			var cb := CheckBox.new()
 			cb.text = "%s (F%d M%d)" % [Dati.nome_unita(id), Dati.unita[id]["forza"], Dati.unita[id]["mov"]]
 			cb.icon = _icona_pedina(id, 30)
+			cb.add_theme_constant_override("icon_max_width", 34)
 			cb.disabled = imp.has(id)
 			cb.button_pressed = id in st["ordini"][capo]["unita"]
 			cb.toggled.connect(func(on: bool):
