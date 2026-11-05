@@ -1209,9 +1209,9 @@ func _intestazione(p: int, titolo: String, spiega: String) -> void:
 	spiega_pannello.text = spiega
 	spiega_pannello.visible = spiega != ""
 	var k := _carta_fase(m.fase)
-	if k != "" and Carte.ha_immagine(k):
+	if k != "" and (Carte.ha_immagine(k, true) or Carte.ha_immagine(k)):
 		var img := TextureRect.new()
-		img.texture = Carte.tex(k)
+		img.texture = Carte.tex(k, true)
 		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 		img.custom_minimum_size = Vector2(0, 120)
@@ -1292,14 +1292,13 @@ func _p_re(p: int) -> void:
 	var scelte_box := HBoxContainer.new()
 	scelte_box.add_theme_constant_override("separation", 6)
 	contenuto.add_child(scelte_box)
-	var descr := _rtl("", 15)
 	var agg := func():
 		for c in scelte_box.get_children():
 			c.queue_free()
 		for i in 3:
 			if i < st["abil"].size():
 				var k: String = st["abil"][i]
-				var b := _bottone_carta(k, 74, false)
+				var b := _tessera_carta(k, 118)
 				b.tooltip_text = "Togli " + Carte.titolo(k)
 				b.pressed.connect(func():
 					st["abil"].remove_at(i)
@@ -1307,52 +1306,102 @@ func _p_re(p: int) -> void:
 				scelte_box.add_child(b)
 			else:
 				var vuota := PanelContainer.new()
-				vuota.custom_minimum_size = Vector2(74, 128)
+				vuota.custom_minimum_size = Vector2(118, 98)
 				vuota.add_theme_stylebox_override("panel", _stile(Color(0.3, 0.2, 0.1, 0.15), Color(BORDO, 0.5), 1, 6, 4))
 				scelte_box.add_child(vuota)
-		var t := ""
-		for k in st["abil"]:
-			t += "[b]%s[/b]: %s\n" % [Carte.titolo(k), Carte.descrizione(k)]
-		descr.text = t
 	st["agg_abil"] = agg
 	contenuto.add_child(_etichetta("Abilità disponibili", 17, true))
-	var griglia := HFlowContainer.new()
-	griglia.add_theme_constant_override("h_separation", 6)
-	griglia.add_theme_constant_override("v_separation", 6)
-	contenuto.add_child(griglia)
 	for k in Carte.ABILITA:
-		var b := _bottone_carta(k, 82, true)
+		var b := _riga_carta(k, Carte.descrizione(k))
 		b.pressed.connect(func():
 			if st["abil"].size() < 3:
 				st["abil"].append(k)
 				st["agg_abil"].call())
-		griglia.add_child(b)
-	contenuto.add_child(descr)
+		contenuto.add_child(b)
 	agg.call()
 	_conferma("Conferma il Re", func():
 		_applica(p, {"prov": st["prov"], "abil": st["abil"].duplicate()}))
 
-## Una carta illustrata cliccabile: immagine (o stemma provvisorio) e nome sotto.
-func _bottone_carta(k: String, larg := 82, con_nome := true, sotto := "") -> Button:
-	var b := Button.new()
-	b.icon = Carte.tex(k)
-	b.expand_icon = true
-	b.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	b.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
-	b.custom_minimum_size = Vector2(larg, larg * 1.5 + (30 if con_nome else 0))
-	b.text = (Carte.titolo(k) + ("\n" + sotto if sotto != "" else "")) if con_nome else ""
-	b.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	b.add_theme_font_size_override("font_size", 12)
-	b.add_theme_constant_override("outline_size", 2)
+func _stili_carta(b: Button, k: String) -> void:
 	var col := Carte.colore(k)
-	var n := _stile(Color(0.13, 0.08, 0.05, 0.92), col.darkened(0.25), 2, 6, 4)
-	var h := _stile(Color(0.2, 0.13, 0.08, 0.95), col, 3, 6, 4)
-	var sel := _stile(Color(0.12, 0.3, 0.1, 0.95), Color(0.95, 0.84, 0.5), 3, 6, 4)
+	var n := _stile(Color(0.13, 0.08, 0.05, 0.92), col.darkened(0.3), 2, 6, 6)
+	var h := _stile(Color(0.22, 0.14, 0.08, 0.96), col, 3, 6, 6)
+	var sel := _stile(Color(0.12, 0.28, 0.1, 0.96), Color(0.95, 0.84, 0.5), 3, 6, 6)
 	b.add_theme_stylebox_override("normal", n)
 	b.add_theme_stylebox_override("hover", h)
 	b.add_theme_stylebox_override("pressed", sel)
 	b.add_theme_stylebox_override("hover_pressed", sel)
+	b.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+
+## Pulsante lungo: illustrazione orizzontale a sinistra, nome e spiegazione a destra.
+func _riga_carta(k: String, dettaglio: String, alt := 82, extra := "") -> Button:
+	var b := Button.new()
+	b.custom_minimum_size = Vector2(0, alt)
+	_stili_carta(b, k)
 	b.tooltip_text = "%s\n%s" % [Carte.titolo(k), Carte.descrizione(k)]
+	var h := HBoxContainer.new()
+	h.set_anchors_preset(Control.PRESET_FULL_RECT)
+	h.offset_left = 5
+	h.offset_top = 5
+	h.offset_right = -8
+	h.offset_bottom = -5
+	h.add_theme_constant_override("separation", 10)
+	h.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(h)
+	var img := TextureRect.new()
+	img.texture = Carte.tex(k, true)
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	img.custom_minimum_size = Vector2((alt - 10) * 1.5, alt - 10)
+	img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(img)
+	var v := VBoxContainer.new()
+	v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	v.alignment = BoxContainer.ALIGNMENT_CENTER
+	v.add_theme_constant_override("separation", 1)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	h.add_child(v)
+	var t := _etichetta(Carte.titolo(k) + ("   " + extra if extra != "" else ""), 16, false, CREMA)
+	t.add_theme_font_override("font", font_bottone)
+	t.add_theme_color_override("font_outline_color", Color(0.1, 0.04, 0.0))
+	t.add_theme_constant_override("outline_size", 3)
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(t)
+	if dettaglio != "":
+		var d := _etichetta(dettaglio, 13, false, Color(CREMA, 0.85))
+		d.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		v.add_child(d)
+	return b
+
+## Tessera piccola: illustrazione orizzontale con il nome sotto.
+func _tessera_carta(k: String, larg := 118) -> Button:
+	var b := Button.new()
+	var alt := int(larg / 1.5)
+	b.custom_minimum_size = Vector2(larg, alt + 22)
+	_stili_carta(b, k)
+	var v := VBoxContainer.new()
+	v.set_anchors_preset(Control.PRESET_FULL_RECT)
+	v.offset_left = 4
+	v.offset_top = 4
+	v.offset_right = -4
+	v.offset_bottom = -2
+	v.add_theme_constant_override("separation", 0)
+	v.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	b.add_child(v)
+	var img := TextureRect.new()
+	img.texture = Carte.tex(k, true)
+	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	img.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(img)
+	var t := _etichetta(Carte.titolo(k), 12, false, CREMA)
+	t.add_theme_font_override("font", font_bottone)
+	t.autowrap_mode = TextServer.AUTOWRAP_OFF
+	t.clip_text = true
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	t.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	v.add_child(t)
 	return b
 
 func _p_alleanze(p: int) -> void:
@@ -1413,9 +1462,8 @@ func _scelte_incantesimi(p: int, rami: Array, spells: Array, _modo := "") -> Arr
 			ob.add_item(Dati.INCANTESIMI[s]["nome"] + ("" if costo == 0 else " (%d seq.)" % costo))
 		ob.visible = false
 		box.add_child(ob)
-		var fila := HFlowContainer.new()
-		fila.add_theme_constant_override("h_separation", 6)
-		fila.add_theme_constant_override("v_separation", 6)
+		var fila := VBoxContainer.new()
+		fila.add_theme_constant_override("separation", 5)
 		box.add_child(fila)
 		var dett := VBoxContainer.new()
 		box.add_child(dett)
@@ -1424,7 +1472,7 @@ func _scelte_incantesimi(p: int, rami: Array, spells: Array, _modo := "") -> Arr
 		for j in ammessi.size():
 			var sp: String = ammessi[j]
 			var costo2: int = Dati.INCANTESIMI[sp]["costo"]
-			var bc := _bottone_carta(sp, 78, true, "%d seq." % costo2 if costo2 > 0 else "")
+			var bc := _riga_carta(sp, Dati.DESCR_INCANTESIMI[sp], 86, "%d seq." % costo2 if costo2 > 0 else "gratis")
 			bc.toggle_mode = true
 			bc.pressed.connect(func():
 				var gia: bool = ob.selected == j + 1
@@ -1446,9 +1494,6 @@ func _dettagli_incantesimo(p: int, riga: Dictionary) -> void:
 	if i <= 0:
 		return
 	var s: String = riga["ammessi"][i - 1]
-	var l := _etichetta(Dati.DESCR_INCANTESIMI[s], 15)
-	l.add_theme_font_override("font", font_corsivo)
-	dett.add_child(l)
 	var dati: Dictionary = riga["dati"]
 	match s:
 		"discordia", "armonia":
@@ -2252,7 +2297,7 @@ var _carta_vista: Control
 func _mostra_carta(k: String, esito: String) -> void:
 	if radice_ui == null or m == null:
 		return
-	if not Dati.INCANTESIMI.has(k) and not Carte.ha_immagine(k) and not (k in ["cattura", "liberazione", "vittoria"]):
+	if not Dati.INCANTESIMI.has(k) and not Carte.ha_immagine(k, true) and not Carte.ha_immagine(k) and not (k in ["cattura", "liberazione", "vittoria"]):
 		return
 	if _carta_vista != null and is_instance_valid(_carta_vista):
 		_carta_vista.queue_free()
@@ -2263,10 +2308,10 @@ func _mostra_carta(k: String, esito: String) -> void:
 	v.add_theme_constant_override("separation", 4)
 	pc.add_child(v)
 	var img := TextureRect.new()
-	img.texture = Carte.tex(k)
+	img.texture = Carte.tex(k, true)
 	img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	img.custom_minimum_size = Vector2(170, 255)
+	img.custom_minimum_size = Vector2(330, 220)
 	v.add_child(img)
 	var t := _etichetta(Carte.titolo(k), 24, true)
 	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

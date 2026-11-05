@@ -58,26 +58,30 @@ static func emblema(k: String) -> String:
 		return k
 	return "azione"
 
-static func percorso_immagine(k: String) -> String:
+## oriz: la versione orizzontale (3:2) in assets/img/carte_o/, usata per pulsanti lunghi e testate.
+static func percorso_immagine(k: String, oriz := false) -> String:
 	for est in ["webp", "png", "jpg", "jpeg"]:
-		var p := "res://assets/img/carte/%s.%s" % [k, est]
+		var p := "res://assets/img/%s/%s.%s" % ["carte_o" if oriz else "carte", k, est]
 		if ResourceLoader.exists(p):
 			return p
 	return ""
 
-static func ha_immagine(k: String) -> bool:
-	return percorso_immagine(k) != ""
+static func ha_immagine(k: String, oriz := false) -> bool:
+	return percorso_immagine(k, oriz) != ""
 
 static var _cache := {}
 
-static func tex(k: String) -> Texture2D:
-	if _cache.has(k):
-		return _cache[k]
-	var p := percorso_immagine(k)
+static func tex(k: String, oriz := false) -> Texture2D:
+	var ck := k + ("|o" if oriz else "")
+	if _cache.has(ck):
+		return _cache[ck]
+	var p := percorso_immagine(k, oriz)
+	if p == "" and oriz:
+		p = percorso_immagine(k)
 	if p == "":
 		p = "res://assets/ui/carta_%s.png" % emblema(k)
 	var t: Texture2D = load(p)
-	_cache[k] = t
+	_cache[ck] = t
 	return t
 
 ## Il colore del ramo o dell'abilità, per bordi e aloni.

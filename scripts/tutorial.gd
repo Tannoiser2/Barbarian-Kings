@@ -176,11 +176,15 @@ Montagna: nani doppi, cavalleria a metà. Foresta: elfi doppi, cavalleria e legi
 Alla fine della battaglia gli indigeni attaccano chi non li ha combattuti. Per conquistare una provincia con un presidio neutrale porta una forza almeno doppia: a 2-1 il rischio è già basso, a 3-1 quasi nullo.""" % [_t("La ritirata"), _t("Il terreno"), _t("Gli indigeni")]
 	return t
 
-static func _carta(k: String, lato := 96) -> String:
-	var p := Carte.percorso_immagine(k)
+static func _carta(k: String, larg := 165) -> String:
+	var p := Carte.percorso_immagine(k, true)
+	var alt := int(larg / 1.5)
 	if p == "":
-		p = "res://assets/ui/carta_%s.png" % Carte.emblema(k)
-	return "[img=%dx%d]%s[/img]" % [lato, int(lato * 1.5), p]
+		p = Carte.percorso_immagine(k)
+		if p == "":
+			p = "res://assets/ui/carta_%s.png" % Carte.emblema(k)
+		return "[img=%dx%d]%s[/img]" % [int(alt / 1.5), alt, p]
+	return "[img=%dx%d]%s[/img]" % [larg, alt, p]
 
 static func _cap_abilita() -> String:
 	var t := """Ogni Re riceve all'inizio [b]tre abilità[/b], scelte in segreto e anche ripetute; ogni Eroe ne riceve una quando lo assoldi, ogni Mago un ramo di magia. Le abilità restano per tutta la partita.

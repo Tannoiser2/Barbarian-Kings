@@ -21,7 +21,8 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   ogni incantesimo quando si può lanciare, con valori e probabilità, e commenta ogni tiro di dado.
 - **Carte illustrate** per incantesimi, abilità e azioni (scelta a carte nel pannello, carta in sovrimpressione
   durante la regia). Le illustrazioni si creano con ChatGPT seguendo `docs/immagini_chatgpt.md` e vanno in
-  `assets/img/carte/`; finché mancano si vedono stemmi provvisori.
+  `assets/img/carte/` (verticali) e `assets/img/carte_o/` (orizzontali, per pulsanti lunghi, testate e carta in
+  sovrimpressione); finché mancano si vedono stemmi provvisori.
 - **Effetti volumetrici** (`scripts/volume.gdshader`): vortici, nubi, nebbie e colonne di luce per magie,
   tornado, tempeste, gelo, alluvioni, maledizioni, risvegli, catture e battaglie.
 - **Consiglio del Saggio** in ogni fase: l'IA propone la mossa e la spiega; nel reclutamento riempie l'ordine e nel
