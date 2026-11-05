@@ -27,7 +27,9 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   tornado, tempeste, gelo, alluvioni, maledizioni, risvegli, catture e battaglie.
 - **Consiglio del Saggio** in ogni fase: l'IA propone la mossa e la spiega; nel reclutamento riempie l'ordine e nel
   movimento traccia i percorsi, che si possono ritoccare prima di confermare.
-- **Pedine originali** sulla mappa SPI (predefinita), in pile per proprietario. Il tasto **3D** le trasforma in
+- **Pedine originali** sulla mappa SPI (predefinita), in pile per proprietario. Il tasto **Illustrate** le sostituisce
+  con pedine dipinte (illustrazioni "reborn" su fondo del colore originale, con forza e movimento;
+  `tools/pedine_illustrate.py`). Il tasto **3D** le trasforma in
   miniature animate; il tasto **Mappa a rilievo** passa alla mappa moderna dipinta con ChatGPT sulla geometria
   originale, con le montagne estruse in 3D, migliaia di alberi nelle foreste, canneti nelle paludi e mare che luccica.
 - **Tavolo 3D** con la mappa originale ad alta risoluzione su un tavolo di legno; telecamera libera (mouse, tastiera,

@@ -139,6 +139,12 @@ func imposta_stile(st: String) -> void:
 	if m != null:
 		sincronizza()
 
+## Cambia la grafica delle pedine di cartone ("spi" o "illustrate") e le ridisegna.
+func imposta_grafica(g: String) -> void:
+	Dati.grafica_pedine = g
+	if stile == "pedine":
+		imposta_stile("pedine")
+
 func imposta_mappa(mod: String) -> void:
 	modalita = mod
 	_costruisci_mappa()
@@ -644,6 +650,8 @@ func _crea_pedina(id: int) -> Node3D:
 	radice.add_child(cont)
 	var lato := 0.58 if modalita == "originale" else 0.46
 	var spess := 0.06
+	# il lato alto della pedina guarda lontano dalla telecamera nella vista iniziale, così le scritte si leggono dritte
+	cont.rotation.y = PI / 2.0 - (PI if modalita == "originale" else PI / 2.0)
 	var corpo := MeshInstance3D.new()
 	var bm := BoxMesh.new()
 	bm.size = Vector3(lato, spess, lato)
@@ -661,10 +669,11 @@ func _crea_pedina(id: int) -> Node3D:
 	faccia.rotation_degrees = Vector3(-90, 0, 0)
 	faccia.position = Vector3(0, spess + 0.031, 0)
 	var mf := StandardMaterial3D.new()
-	if not _tex_pedine.has(id):
-		var perc := "res://assets/img/pedine_colore/%03d.png" % id
-		_tex_pedine[id] = load(perc) if ResourceLoader.exists(perc) else null
-	mf.albedo_texture = _tex_pedine[id]
+	var chiave := "%s|%d" % [Dati.grafica_pedine, id]
+	if not _tex_pedine.has(chiave):
+		var perc := Dati.img_pedina(id)
+		_tex_pedine[chiave] = load(perc) if perc != "" else null
+	mf.albedo_texture = _tex_pedine[chiave]
 	mf.roughness = 0.8
 	mf.shading_mode = BaseMaterial3D.SHADING_MODE_UNSHADED
 	faccia.material_override = mf

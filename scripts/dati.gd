@@ -8,6 +8,8 @@ static var province := {}      # id -> {id, nome, tasse, nativi, terreno, adiace
 static var unita := {}         # id -> {id, tipo, origine, costo, mant, forza, mov, casa, nome}
 static var tipi := {}          # tipo -> {nome, classe}
 static var fanteria_nativa := {}
+## Grafica delle pedine di cartone: "spi" (originali) o "illustrate" (illustrazioni reborn).
+static var grafica_pedine := "spi"
 
 const COLORI := ["Bianco", "Rosso", "Giallo", "Verde", "Blu"]
 const COLORI_RGB := [Color(0.95, 0.93, 0.86), Color(0.80, 0.14, 0.12), Color(0.95, 0.78, 0.15), Color(0.20, 0.58, 0.22), Color(0.18, 0.36, 0.80)]
@@ -129,3 +131,10 @@ static func nome_tipo(id: int) -> String:
 
 static func adiacenti(a: int, b: int) -> bool:
 	return b in province[a]["adiacenti"]
+
+## Percorso dell'immagine della pedina, secondo la grafica scelta (vuoto se non esiste).
+static func img_pedina(id: int) -> String:
+	var p := "res://assets/img/pedine_ill/%03d.webp" % id if grafica_pedine == "illustrate" else "res://assets/img/pedine_colore/%03d.png" % id
+	if not ResourceLoader.exists(p):
+		p = "res://assets/img/pedine_colore/%03d.png" % id
+	return p if ResourceLoader.exists(p) else ""

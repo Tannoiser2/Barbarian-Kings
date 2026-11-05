@@ -61,6 +61,7 @@ var saggio_testo: RichTextLabel
 var saggio_bottoni: HBoxContainer
 var btn_rilievo: Button
 var btn_3d: Button
+var btn_ill: Button
 var giocatore_ui := -1
 var click_mode: Callable = Callable()
 var _prov_info := 0
@@ -85,6 +86,7 @@ func _ready() -> void:
 	plancia = Plancia3D.new()
 	plancia.modalita = str(_imp("mappa", "originale"))
 	plancia.stile = str(_imp("stile", "pedine" if plancia.modalita == "originale" else "3d"))
+	Dati.grafica_pedine = str(_imp("grafica", "spi"))
 	add_child(plancia)
 	plancia.vista_iniziale()
 	plancia.provincia_cliccata.connect(_su_click_provincia)
@@ -140,10 +142,28 @@ func _cambia_stile(tre_d: bool) -> void:
 	plancia.imposta_stile(sti)
 	_aggiorna_interruttori()
 
+func _cambia_grafica(ill: bool) -> void:
+	if m != null and plancia.occupata():
+		_cambio_pendente = _cambia_grafica.bind(ill)
+		return
+	var g := "illustrate" if ill else "spi"
+	_salva_imp("grafica", g)
+	if plancia.stile == "3d":
+		Dati.grafica_pedine = g
+		_cambia_stile(false)
+	else:
+		plancia.imposta_grafica(g)
+	_aggiorna_interruttori()
+	if _prov_info > 0:
+		_mostra_info(_prov_info)
+
 func _aggiorna_interruttori() -> void:
 	if btn_rilievo != null and is_instance_valid(btn_rilievo):
 		btn_rilievo.set_pressed_no_signal(plancia.modalita == "moderna")
 		btn_rilievo.tooltip_text = "Mappa a rilievo con montagne e foreste in 3D" if plancia.modalita != "moderna" else "Torna alla mappa originale SPI del 1980"
+	if btn_ill != null and is_instance_valid(btn_ill):
+		btn_ill.set_pressed_no_signal(Dati.grafica_pedine == "illustrate" and plancia.stile == "pedine")
+		btn_ill.tooltip_text = "Pedine con le illustrazioni nuove al posto della grafica SPI" if Dati.grafica_pedine != "illustrate" else "Torna alle pedine originali SPI"
 	if btn_3d != null and is_instance_valid(btn_3d):
 		btn_3d.set_pressed_no_signal(plancia.stile == "3d")
 		btn_3d.tooltip_text = "Trasforma le pedine in miniature 3D animate" if plancia.stile != "3d" else "Torna alle pedine di cartone originali"
@@ -297,6 +317,7 @@ func _pulisci_ui() -> void:
 	saggio_box = null
 	btn_rilievo = null
 	btn_3d = null
+	btn_ill = null
 
 func _etichetta(t: String, dim := 18, titolo := false, col := INCHIOSTRO) -> Label:
 	var l := Label.new()
@@ -386,10 +407,14 @@ func _veste(b: Button, tipo: String) -> Button:
 	return b
 
 func _interruttori(h: HBoxContainer, dim := 16) -> void:
-	btn_rilievo = _bottone("Mappa a rilievo", func(): _cambia_mappa(btn_rilievo.button_pressed), dim)
+	btn_rilievo = _bottone("Rilievo" if dim < 16 else "Mappa a rilievo", func(): _cambia_mappa(btn_rilievo.button_pressed), dim)
 	btn_rilievo.toggle_mode = true
 	_veste(btn_rilievo, "secondario")
 	h.add_child(btn_rilievo)
+	btn_ill = _bottone("Illustrate", func(): _cambia_grafica(btn_ill.button_pressed), dim)
+	btn_ill.toggle_mode = true
+	_veste(btn_ill, "secondario")
+	h.add_child(btn_ill)
 	btn_3d = _bottone("3D", func(): _cambia_stile(btn_3d.button_pressed), dim)
 	btn_3d.toggle_mode = true
 	btn_3d.custom_minimum_size = Vector2(64, 0)
@@ -639,6 +664,7 @@ func _costruisci_gioco() -> void:
 	lg.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	lg.add_theme_color_override("font_outline_color", Color(0.1, 0.04, 0.0))
 	lg.add_theme_constant_override("outline_size", 4)
+	lg.visible = m == null or m.n <= 3
 	barra.add_child(lg)
 	box_giocatori = HBoxContainer.new()
 	box_giocatori.add_theme_constant_override("separation", 16)
@@ -901,7 +927,7 @@ func _aggiorna_tutto() -> void:
 		pb.max_value = m.soglia
 		pb.value = t
 		pb.show_percentage = false
-		pb.custom_minimum_size = Vector2(70, 9)
+		pb.custom_minimum_size = Vector2(70 if m.n <= 4 else 52, 9)
 		pb.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 		r.add_child(pb)
 		var mo := TextureRect.new()
@@ -1171,8 +1197,8 @@ func _mostra_info(q: int) -> void:
 	info.reset_size()
 
 func _img_pedina(id: int, lato := 34) -> String:
-	var perc := "res://assets/img/pedine_colore/%03d.png" % id
-	if not ResourceLoader.exists(perc):
+	var perc := Dati.img_pedina(id)
+	if perc == "":
 		return ""
 	return "[img=%dx%d]%s[/img] " % [lato, lato, perc]
 
@@ -1747,7 +1773,8 @@ func _p_acquisti(p: int) -> void:
 			var h := HBoxContainer.new()
 			var ic := TextureRect.new()
 			var nome_ic := "%03d" % id0
-			ic.texture = load("res://assets/img/pedine_colore/%s.png" % nome_ic) if ResourceLoader.exists("res://assets/img/pedine_colore/%s.png" % nome_ic) else null
+			var perc_ic := Dati.img_pedina(int(nome_ic))
+			ic.texture = load(perc_ic) if perc_ic != "" else null
 			ic.custom_minimum_size = Vector2(46, 46)
 			ic.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 			ic.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

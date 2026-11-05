@@ -10,7 +10,7 @@ static func _t(s: String) -> String:
 	return "[color=#%s][b]%s[/b][/color]" % [ROSSO, s]
 
 static func _ped(id: int, lato := 52) -> String:
-	return "[img=%dx%d]res://assets/img/pedine_colore/%03d.png[/img]" % [lato, lato, id]
+	return "[img=%dx%d]%s[/img]" % [lato, lato, Dati.img_pedina(id)]
 
 static func capitoli() -> Array:
 	return [

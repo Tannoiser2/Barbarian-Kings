@@ -19,6 +19,8 @@ func _init() -> void:
 		pl.modalita = args[3]
 	if args.size() > 4:
 		pl.stile = args[4]
+	if args.size() > 5:
+		Dati.grafica_pedine = args[5]
 	root.add_child(pl)
 	await process_frame
 	pl.collega(m)
