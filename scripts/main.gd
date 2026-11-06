@@ -769,21 +769,24 @@ func _costruisci_gioco() -> void:
 	radice_ui.add_child(info)
 	var iv := VBoxContainer.new()
 	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	iv.add_theme_constant_override("separation", 6)
+	iv.add_theme_constant_override("separation", 2)
 	info.add_child(iv)
+	info.add_theme_stylebox_override("panel", _stile_tex("pergamena", 26, 18, 14))
 	# nome, dati, illustrazione a tutta larghezza, controllo e pedine
-	info_titolo = _etichetta("", 24, true)
+	info_titolo = _etichetta("", 23, true)
+	info_titolo.add_theme_constant_override("line_spacing", -6)
 	info_titolo.autowrap_mode = TextServer.AUTOWRAP_OFF
 	info_titolo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	iv.add_child(info_titolo)
 	info_dati = _rtl("", 15)
 	info_dati.custom_minimum_size = Vector2(LARG_INFO, 0)
 	info_dati.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_dati.add_theme_constant_override("line_separation", -3)
 	iv.add_child(info_dati)
 	info_img = TextureRect.new()
 	info_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	info_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	info_img.custom_minimum_size = Vector2(LARG_INFO, LARG_INFO * 0.5)
+	info_img.custom_minimum_size = Vector2(LARG_INFO, LARG_INFO * 0.42)
 	info_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	iv.add_child(info_img)
 	info_testo = RichTextLabel.new()
@@ -791,11 +794,12 @@ func _costruisci_gioco() -> void:
 	info_testo.fit_content = true
 	info_testo.custom_minimum_size = Vector2(LARG_INFO, 0)
 	info_testo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_testo.add_theme_constant_override("line_separation", -3)
 	info_testo.add_theme_font_size_override("normal_font_size", 15)
 	iv.add_child(info_testo)
 	info_forze = VBoxContainer.new()
 	info_forze.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_forze.add_theme_constant_override("separation", 4)
+	info_forze.add_theme_constant_override("separation", 1)
 	iv.add_child(info_forze)
 	# cronaca dell'anno in basso a sinistra, comprimibile
 	diario_box = PanelContainer.new()
@@ -1220,6 +1224,7 @@ func _mostra_info(q: int) -> void:
 		var intest := _rtl("%s  -  forza [b]%d[/b]" % [_nome_colore(o), forza], 15)
 		intest.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		intest.custom_minimum_size = Vector2(LARG_INFO, 0)
+		intest.add_theme_constant_override("line_separation", -3)
 		info_forze.add_child(intest)
 		# pile di pedine uguali: capi prima, poi le truppe raggruppate per tipo
 		var pile := {}
@@ -1242,18 +1247,19 @@ func _mostra_info(q: int) -> void:
 		for k in ordine:
 			var pila := _pila_info(pile[k])
 			var w: float = pila.custom_minimum_size.x
-			if usata + w > LARG_INFO:
+			if usata + w > LARG_INFO + 8.0:
 				fila = HBoxContainer.new()
 				fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
-				fila.add_theme_constant_override("separation", 8)
+				fila.add_theme_constant_override("separation", 6)
 				info_forze.add_child(fila)
 				usata = 0.0
 			fila.add_child(pila)
-			usata += w + 8.0
+			usata += w + 6.0
 		if not note.is_empty():
 			var n := _rtl("[font_size=13]" + "\n".join(note) + "[/font_size]", 13)
 			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
 			n.custom_minimum_size = Vector2(LARG_INFO, 0)
+			n.add_theme_constant_override("line_separation", -4)
 			info_forze.add_child(n)
 	info.visible = true
 	info.reset_size()
@@ -1266,8 +1272,8 @@ func _ridimensiona_info() -> void:
 
 ## Una pila di pedine uguali, leggermente sfalsate, con il numero se sono più di una.
 func _pila_info(ids: Array) -> Control:
-	var lato := 50.0
-	var passo := 5.0
+	var lato := 44.0
+	var passo := 4.0
 	var n := mini(ids.size(), 5)
 	var c := Control.new()
 	c.mouse_filter = Control.MOUSE_FILTER_PASS
