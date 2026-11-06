@@ -52,6 +52,7 @@ var btn_saggio: Button
 var _azione_conferma: Callable = Callable()
 var info: PanelContainer
 var info_testo: RichTextLabel
+var info_img: TextureRect
 var diario: RichTextLabel
 var diario_box: PanelContainer
 var diario_corpo: Control
@@ -762,13 +763,23 @@ func _costruisci_gioco() -> void:
 	info.visible = false
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	radice_ui.add_child(info)
+	var iv := VBoxContainer.new()
+	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	iv.add_theme_constant_override("separation", 6)
+	info.add_child(iv)
+	info_img = TextureRect.new()
+	info_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	info_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
+	info_img.custom_minimum_size = Vector2(300, 200)
+	info_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	iv.add_child(info_img)
 	info_testo = RichTextLabel.new()
 	info_testo.bbcode_enabled = true
 	info_testo.fit_content = true
 	info_testo.custom_minimum_size = Vector2(300, 0)
 	info_testo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info_testo.add_theme_font_size_override("normal_font_size", 16)
-	info.add_child(info_testo)
+	iv.add_child(info_testo)
 	# cronaca dell'anno in basso a sinistra, comprimibile
 	diario_box = PanelContainer.new()
 	diario_box.anchor_top = 1.0
@@ -1203,6 +1214,10 @@ func _mostra_info(q: int) -> void:
 			t += _img_pedina(id, 34)
 		t += "\n[font_size=14]" + "\n".join(righe) + "[/font_size]"
 	info_testo.text = t
+	var perc_img := "res://assets/img/province/%02d.webp" % q
+	info_img.visible = ResourceLoader.exists(perc_img)
+	if info_img.visible:
+		info_img.texture = load(perc_img)
 	info.visible = true
 	info.reset_size()
 
