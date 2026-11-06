@@ -54,6 +54,9 @@ var info: PanelContainer
 var info_testo: RichTextLabel
 var info_img: TextureRect
 var info_forze: VBoxContainer
+var info_titolo: Label
+var info_dati: RichTextLabel
+const LARG_INFO := 270.0
 var diario: RichTextLabel
 var diario_box: PanelContainer
 var diario_corpo: Control
@@ -760,7 +763,7 @@ func _costruisci_gioco() -> void:
 	# scheda della provincia sotto il mouse, a sinistra
 	info = PanelContainer.new()
 	info.position = Vector2(8, 102)
-	info.custom_minimum_size = Vector2(340, 0)
+	info.custom_minimum_size = Vector2(0, 0)
 	info.visible = false
 	info.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	radice_ui.add_child(info)
@@ -768,26 +771,28 @@ func _costruisci_gioco() -> void:
 	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	iv.add_theme_constant_override("separation", 6)
 	info.add_child(iv)
-	# testata: illustrazione piccola a sinistra, nome e dati a destra
-	var ih := HBoxContainer.new()
-	ih.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ih.add_theme_constant_override("separation", 10)
-	iv.add_child(ih)
+	# nome, dati, illustrazione a tutta larghezza, controllo e pedine
+	info_titolo = _etichetta("", 24, true)
+	info_titolo.autowrap_mode = TextServer.AUTOWRAP_OFF
+	info_titolo.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	iv.add_child(info_titolo)
+	info_dati = _rtl("", 15)
+	info_dati.custom_minimum_size = Vector2(LARG_INFO, 0)
+	info_dati.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	iv.add_child(info_dati)
 	info_img = TextureRect.new()
 	info_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	info_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	info_img.custom_minimum_size = Vector2(108, 72)
-	info_img.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	info_img.custom_minimum_size = Vector2(LARG_INFO, LARG_INFO * 0.5)
 	info_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ih.add_child(info_img)
+	iv.add_child(info_img)
 	info_testo = RichTextLabel.new()
 	info_testo.bbcode_enabled = true
 	info_testo.fit_content = true
-	info_testo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info_testo.custom_minimum_size = Vector2(196, 0)
+	info_testo.custom_minimum_size = Vector2(LARG_INFO, 0)
 	info_testo.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info_testo.add_theme_font_size_override("normal_font_size", 15)
-	ih.add_child(info_testo)
+	iv.add_child(info_testo)
 	info_forze = VBoxContainer.new()
 	info_forze.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	info_forze.add_theme_constant_override("separation", 4)
@@ -1180,14 +1185,16 @@ func _mostra_info(q: int) -> void:
 		return
 	_prov_info = q
 	var pr: Dictionary = Dati.province[q]
-	var t := "[font_size=22][color=#%s][font=res://assets/font/PirataOne.ttf]%s[/font][/color][/font_size]\n" % [_hex(ROSSO_TITOLO), Dati.nome_prov(q)]
-	t += "[img=15x15]res://assets/ui/moneta.png[/img] tasse [b]%d[/b]  %s" % [pr["tasse"], Dati.TERRENI[pr["terreno"]]]
+	info_titolo.text = Dati.nome_prov(q)
+	var dati := "%s" % Dati.TERRENI[pr["terreno"]]
 	if pr["nativi"] != "":
-		t += "\npopolo [i]%s[/i]" % Dati.NATIVI[pr["nativi"]]
-	t += "\nControllo: %s" % (_nome_colore(m.ctrl[q]) if m.ctrl[q] >= 0 else "nessuno")
+		dati += "  -  [i]%s[/i]" % Dati.NATIVI[pr["nativi"]]
+	dati += "  -  [img=15x15]res://assets/ui/moneta.png[/img] tasse [b]%d[/b]" % pr["tasse"]
+	info_dati.text = dati
+	var t := "Controllo: %s" % (_nome_colore(m.ctrl[q]) if m.ctrl[q] >= 0 else "nessuno")
 	for x in [[m.tornado, "Tornado"], [m.tempesta_mari, "Tempesta"], [m.tempesta_monti, "Tempesta"], [m.gelo, "Mare gelato"], [m.alluvione, "Alluvione"]]:
 		if q in x[0]:
-			t += "\n[i]%s[/i]" % x[1]
+			t += "  -  [i]%s[/i]" % x[1]
 	info_testo.text = t
 	var perc_img := "res://assets/img/province/%02d.webp" % q
 	info_img.visible = ResourceLoader.exists(perc_img)
@@ -1212,7 +1219,7 @@ func _mostra_info(q: int) -> void:
 		var forza := m.forza_effettiva(ids.filter(func(id): return Dati.is_militare(id)), q)
 		var intest := _rtl("%s  -  forza [b]%d[/b]" % [_nome_colore(o), forza], 15)
 		intest.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		intest.custom_minimum_size = Vector2(310, 0)
+		intest.custom_minimum_size = Vector2(LARG_INFO, 0)
 		info_forze.add_child(intest)
 		# pile di pedine uguali: capi prima, poi le truppe raggruppate per tipo
 		var pile := {}
@@ -1235,7 +1242,7 @@ func _mostra_info(q: int) -> void:
 		for k in ordine:
 			var pila := _pila_info(pile[k])
 			var w: float = pila.custom_minimum_size.x
-			if usata + w > 310.0:
+			if usata + w > LARG_INFO:
 				fila = HBoxContainer.new()
 				fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
 				fila.add_theme_constant_override("separation", 8)
@@ -1246,7 +1253,7 @@ func _mostra_info(q: int) -> void:
 		if not note.is_empty():
 			var n := _rtl("[font_size=13]" + "\n".join(note) + "[/font_size]", 13)
 			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
-			n.custom_minimum_size = Vector2(310, 0)
+			n.custom_minimum_size = Vector2(LARG_INFO, 0)
 			info_forze.add_child(n)
 	info.visible = true
 	info.reset_size()
