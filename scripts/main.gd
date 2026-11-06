@@ -53,6 +53,7 @@ var _azione_conferma: Callable = Callable()
 var info: PanelContainer
 var info_testo: RichTextLabel
 var info_img: TextureRect
+var info_forze: VBoxContainer
 var diario: RichTextLabel
 var diario_box: PanelContainer
 var diario_corpo: Control
@@ -767,19 +768,30 @@ func _costruisci_gioco() -> void:
 	iv.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	iv.add_theme_constant_override("separation", 6)
 	info.add_child(iv)
+	# testata: illustrazione piccola a sinistra, nome e dati a destra
+	var ih := HBoxContainer.new()
+	ih.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ih.add_theme_constant_override("separation", 10)
+	iv.add_child(ih)
 	info_img = TextureRect.new()
 	info_img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	info_img.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	info_img.custom_minimum_size = Vector2(300, 200)
+	info_img.custom_minimum_size = Vector2(108, 72)
+	info_img.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 	info_img.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	iv.add_child(info_img)
+	ih.add_child(info_img)
 	info_testo = RichTextLabel.new()
 	info_testo.bbcode_enabled = true
 	info_testo.fit_content = true
-	info_testo.custom_minimum_size = Vector2(300, 0)
+	info_testo.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info_testo.custom_minimum_size = Vector2(196, 0)
 	info_testo.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	info_testo.add_theme_font_size_override("normal_font_size", 16)
-	iv.add_child(info_testo)
+	info_testo.add_theme_font_size_override("normal_font_size", 15)
+	ih.add_child(info_testo)
+	info_forze = VBoxContainer.new()
+	info_forze.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	info_forze.add_theme_constant_override("separation", 4)
+	iv.add_child(info_forze)
 	# cronaca dell'anno in basso a sinistra, comprimibile
 	diario_box = PanelContainer.new()
 	diario_box.anchor_top = 1.0
@@ -1168,58 +1180,114 @@ func _mostra_info(q: int) -> void:
 		return
 	_prov_info = q
 	var pr: Dictionary = Dati.province[q]
-	var t := "[font_size=24][color=#%s][font=res://assets/font/PirataOne.ttf]%s[/font][/color][/font_size]\n" % [_hex(ROSSO_TITOLO), Dati.nome_prov(q)]
-	t += "[img=16x16]res://assets/ui/moneta.png[/img] tasse [b]%d[/b]   %s" % [pr["tasse"], Dati.TERRENI[pr["terreno"]]]
+	var t := "[font_size=22][color=#%s][font=res://assets/font/PirataOne.ttf]%s[/font][/color][/font_size]\n" % [_hex(ROSSO_TITOLO), Dati.nome_prov(q)]
+	t += "[img=15x15]res://assets/ui/moneta.png[/img] tasse [b]%d[/b]  %s" % [pr["tasse"], Dati.TERRENI[pr["terreno"]]]
 	if pr["nativi"] != "":
-		t += "   popolo [i]%s[/i]" % Dati.NATIVI[pr["nativi"]]
+		t += "\npopolo [i]%s[/i]" % Dati.NATIVI[pr["nativi"]]
 	t += "\nControllo: %s" % (_nome_colore(m.ctrl[q]) if m.ctrl[q] >= 0 else "nessuno")
-	if q in m.tornado:
-		t += "\n[i]Un tornado devasta la provincia.[/i]"
-	if q in m.tempesta_mari or q in m.tempesta_monti:
-		t += "\n[i]Tempesta.[/i]"
-	if q in m.gelo:
-		t += "\n[i]Il mare è gelato.[/i]"
-	if q in m.alluvione:
-		t += "\n[i]Alluvione.[/i]"
+	for x in [[m.tornado, "Tornado"], [m.tempesta_mari, "Tempesta"], [m.tempesta_monti, "Tempesta"], [m.gelo, "Mare gelato"], [m.alluvione, "Alluvione"]]:
+		if q in x[0]:
+			t += "\n[i]%s[/i]" % x[1]
+	info_testo.text = t
+	var perc_img := "res://assets/img/province/%02d.webp" % q
+	info_img.visible = ResourceLoader.exists(perc_img)
+	if info_img.visible:
+		info_img.texture = load(perc_img)
+	for c in info_forze.get_children():
+		info_forze.remove_child(c)
+		c.queue_free()
 	var spett := plancia.spettatore
 	var per_own := {}
+	var ordine_own := []
 	for id in m.unita_in(q):
 		if not m.visibile_a(id, spett):
 			continue
 		var o: int = m.u[id]["own"]
 		if not per_own.has(o):
 			per_own[o] = []
+			ordine_own.append(o)
 		per_own[o].append(id)
-	for o in per_own:
+	for o in ordine_own:
 		var ids: Array = per_own[o]
 		var forza := m.forza_effettiva(ids.filter(func(id): return Dati.is_militare(id)), q)
-		t += "\n\n%s  -  forza [b]%d[/b]\n" % [_nome_colore(o), forza]
-		var righe := []
-		var gruppi := {}
+		var intest := _rtl("%s  -  forza [b]%d[/b]" % [_nome_colore(o), forza], 15)
+		intest.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		intest.custom_minimum_size = Vector2(310, 0)
+		info_forze.add_child(intest)
+		# pile di pedine uguali: capi prima, poi le truppe raggruppate per tipo
+		var pile := {}
 		var ordine := []
+		var note := []
 		for id in ids:
 			var s0: Dictionary = m.u[id]
-			if Dati.is_militare(id) and not s0["zombie"] and s0["catt"] == -9 and not (o == spett and (s0["illus"] or s0["invis"])):
-				var k := "%s (F%d M%d)" % [Dati.nome_tipo(id), Dati.unita[id]["forza"], Dati.unita[id]["mov"]]
-				if not gruppi.has(k):
-					gruppi[k] = 0
-					ordine.append(k)
-				gruppi[k] += 1
-			else:
-				righe.append(_descr_unita(id, o == spett))
+			var k: String = "c%d" % id if not Dati.is_militare(id) else Dati.unita[id]["tipo"] + ("z" if s0["zombie"] else "")
+			if not pile.has(k):
+				pile[k] = []
+				ordine.append(k)
+			pile[k].append(id)
+			if not Dati.is_militare(id) or s0["zombie"] or s0["catt"] != -9 or (o == spett and (s0["illus"] or s0["invis"])):
+				var d := _descr_unita(id, o == spett)
+				if d.find(" - ") >= 0 or d.find("[i]") >= 0:
+					note.append(d)
+		# righe a larghezza fissa (un HFlowContainer qui gonfia l'altezza della scheda)
+		var fila: HBoxContainer = null
+		var usata := 999.0
 		for k in ordine:
-			righe.append(("%d x " % gruppi[k] if gruppi[k] > 1 else "") + k)
-		# le pedine originali in fila, poi la descrizione
-		for id in ids:
-			t += _img_pedina(id, 34)
-		t += "\n[font_size=14]" + "\n".join(righe) + "[/font_size]"
-	info_testo.text = t
-	var perc_img := "res://assets/img/province/%02d.webp" % q
-	info_img.visible = ResourceLoader.exists(perc_img)
-	if info_img.visible:
-		info_img.texture = load(perc_img)
+			var pila := _pila_info(pile[k])
+			var w: float = pila.custom_minimum_size.x
+			if usata + w > 310.0:
+				fila = HBoxContainer.new()
+				fila.mouse_filter = Control.MOUSE_FILTER_IGNORE
+				fila.add_theme_constant_override("separation", 8)
+				info_forze.add_child(fila)
+				usata = 0.0
+			fila.add_child(pila)
+			usata += w + 8.0
+		if not note.is_empty():
+			var n := _rtl("[font_size=13]" + "\n".join(note) + "[/font_size]", 13)
+			n.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			n.custom_minimum_size = Vector2(310, 0)
+			info_forze.add_child(n)
 	info.visible = true
 	info.reset_size()
+	_ridimensiona_info.call_deferred()
+
+func _ridimensiona_info() -> void:
+	if info != null and is_instance_valid(info):
+		info.size = Vector2.ZERO
+		info.reset_size()
+
+## Una pila di pedine uguali, leggermente sfalsate, con il numero se sono più di una.
+func _pila_info(ids: Array) -> Control:
+	var lato := 50.0
+	var passo := 5.0
+	var n := mini(ids.size(), 5)
+	var c := Control.new()
+	c.mouse_filter = Control.MOUSE_FILTER_PASS
+	c.custom_minimum_size = Vector2(lato + passo * (n - 1), lato + passo * (n - 1))
+	var id0: int = ids[0]
+	c.tooltip_text = "%s%s" % ["%d x " % ids.size() if ids.size() > 1 else "", Dati.nome_unita(id0) if not Dati.is_militare(id0) else Dati.nome_tipo(id0)]
+	for i in n:
+		var tr := TextureRect.new()
+		var perc := Dati.img_pedina(int(ids[n - 1 - i]))
+		if perc != "":
+			tr.texture = load(perc)
+		tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+		tr.stretch_mode = TextureRect.STRETCH_SCALE
+		tr.position = Vector2(passo * (n - 1 - i), passo * (n - 1 - i))
+		tr.size = Vector2(lato, lato)
+		tr.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.add_child(tr)
+	if ids.size() > 1:
+		var b := _etichetta("%d" % ids.size(), 16, false, CREMA)
+		b.add_theme_font_override("font", font_bottone)
+		b.add_theme_color_override("font_outline_color", Color(0.1, 0.04, 0.0))
+		b.add_theme_constant_override("outline_size", 5)
+		b.autowrap_mode = TextServer.AUTOWRAP_OFF
+		b.position = Vector2(c.custom_minimum_size.x - 12, -8)
+		b.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		c.add_child(b)
+	return c
 
 func _img_pedina(id: int, lato := 34) -> String:
 	var perc := Dati.img_pedina(id)
