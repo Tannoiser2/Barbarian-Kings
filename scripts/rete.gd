@@ -206,7 +206,8 @@ func db_delete(path: String) -> Dictionary:
 # ---------- stanze ----------
 
 ## Crea una stanza con un codice di 4 lettere. Il posto 0 è dell'host. cfg: impostazioni della partita.
-func create_room(player: String, cfg: Dictionary) -> String:
+## con_posto = false: chi crea la stanza non gioca (la TV del tavolo), i posti partono da 1.
+func create_room(player: String, cfg: Dictionary, con_posto := true) -> String:
 	last_error = ""
 	if not await sign_in():
 		return ""
@@ -220,7 +221,9 @@ func create_room(player: String, cfg: Dictionary) -> String:
 		if existing["code"] == 200 and existing["data"] != null:
 			continue
 		var body := {"host": uid, "created": {".sv": "timestamp"}, "status": "lobby", "cfg": JSON.stringify(cfg),
-			"seats/0": {"uid": uid, "name": player}, "members/" + uid: true}
+			"members/" + uid: true}
+		if con_posto:
+			body["seats/0"] = {"uid": uid, "name": player}
 		var r := await db_patch(ROOT + "/" + code, body)
 		if r["code"] == 200:
 			return code

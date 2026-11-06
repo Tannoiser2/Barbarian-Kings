@@ -35,6 +35,8 @@ var velocita := 1.0
 var cam: Camera3D
 var cam_bersaglio := Vector3.ZERO
 var cam_yaw := PI
+## Sul telefono in verticale la mappa sta nella metà alta: la vista si sposta in su di questa frazione.
+var spostamento_v := 0.0
 var cam_pitch := deg_to_rad(52.0)
 var cam_dist := 24.0
 var _trascina := 0
@@ -545,6 +547,7 @@ func _aggiorna_cam() -> void:
 	var off := Vector3(cos(cam_pitch) * cos(cam_yaw), sin(cam_pitch), cos(cam_pitch) * sin(cam_yaw)) * cam_dist
 	cam.position = cam_bersaglio + off
 	cam.look_at(cam_bersaglio, Vector3.UP)
+	cam.v_offset = -spostamento_v * 2.0 * cam_dist * tan(deg_to_rad(cam.fov * 0.5))
 
 func inquadra(p: int, dist := 12.0) -> void:
 	var t := create_tween().set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)

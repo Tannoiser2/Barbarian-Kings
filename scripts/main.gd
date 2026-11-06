@@ -54,6 +54,7 @@ var info: PanelContainer
 var info_testo: RichTextLabel
 var info_img: TextureRect
 var info_forze: VBoxContainer
+var _info_n := 0
 var info_titolo: Label
 var info_dati: RichTextLabel
 const LARG_INFO := 270.0
@@ -70,6 +71,11 @@ var btn_ill: Button
 var giocatore_ui := -1
 var click_mode: Callable = Callable()
 var _prov_info := 0
+
+# tavolo con TV e telefoni
+var tv := false                 # questo dispositivo è la TV: mostra il tavolo, non decide per nessuno
+var telefono := false           # questo dispositivo è il telefono di un re (aperto dal QR)
+var stanza_url := ""            # codice della stanza letto dall'indirizzo (?stanza=ABCD)
 
 # partita guidata
 var tutorial := false
@@ -109,7 +115,17 @@ func _ready() -> void:
 	ui.add_child(radice_ui)
 	rete = Rete.new()
 	add_child(rete)
-	_menu()
+	if OS.has_feature("web"):
+		var cod = JavaScriptBridge.eval("new URLSearchParams(window.location.search).get('stanza') || ''", true)
+		if str(cod).length() == 4:
+			stanza_url = str(cod).to_upper()
+	if stanza_url != "" or OS.get_environment("BK_TELEFONO") != "":
+		if stanza_url == "":
+			stanza_url = OS.get_environment("BK_TELEFONO")
+		_imposta_telefono()
+		_menu_telefono()
+	else:
+		_menu()
 
 # ---------------------------------------------------------------- impostazioni salvate
 
@@ -429,6 +445,155 @@ func _interruttori(h: HBoxContainer, dim := 16) -> void:
 	h.add_child(btn_3d)
 	_aggiorna_interruttori()
 
+# ---------------------------------------------------------------- tavolo: TV e telefoni
+
+func _imposta_telefono() -> void:
+	telefono = true
+	var w := get_window()
+	var dim := DisplayServer.window_get_size()
+	if dim.y > dim.x:
+		w.content_scale_size = Vector2i(540, 960)
+		plancia.spostamento_v = 0.26
+	plancia.stile = "pedine"
+	plancia.imposta_mappa("originale")
+
+## Indirizzo da aprire sul telefono per entrare nella stanza.
+func _url_stanza() -> String:
+	var base := "https://tannoiser2.github.io/Barbarian-Kings/"
+	if OS.has_feature("web"):
+		base = str(JavaScriptBridge.eval("window.location.origin + window.location.pathname", true))
+	return base + "?stanza=" + codice
+
+func _qr_texture(testo: String, px := 8) -> TextureRect:
+	var tr := TextureRect.new()
+	var img := QR.immagine(testo, px)
+	if img != null:
+		tr.texture = ImageTexture.create_from_image(img)
+	tr.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	tr.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	tr.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	return tr
+
+## Il telefono aperto dal QR: un nome e si entra nella stanza.
+func _menu_telefono() -> void:
+	var v := _schermo_centrale(470)
+	_logo(v, 110)
+	var t := _etichetta("Stanza  " + stanza_url, 30, true)
+	t.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	v.add_child(t)
+	v.add_child(_etichetta("Questo telefono sarà il tuo tavolo segreto: qui scegli reclute, incantesimi e mosse, mentre la TV mostra a tutti la mappa senza svelare i tuoi piani.", 17))
+	var nome := LineEdit.new()
+	nome.placeholder_text = "Il tuo nome"
+	nome.text = str(rete.load_session().get("nome", ""))
+	nome.custom_minimum_size = Vector2(0, 46)
+	v.add_child(nome)
+	var b := _veste(_bottone("Siediti al tavolo", func(): _entra_stanza(stanza_url, nome.text.strip_edges()), 22), "verde")
+	b.custom_minimum_size = Vector2(0, 58)
+	v.add_child(b)
+
+## La TV crea la stanza senza occupare un posto e mostra il QR.
+func _crea_tavolo_tv() -> void:
+	var v := _schermo_centrale()
+	v.add_child(_etichetta("Preparo il tavolo...", 18))
+	var c := await rete.create_room("Tavolo", {"ia": [], "tv": true}, false)
+	if c == "":
+		v.add_child(_etichetta("Non riesco a creare la stanza: " + rete.last_error, 16))
+		v.add_child(_bottone("Indietro", _menu_online))
+		return
+	codice = c
+	host = true
+	tv = true
+	mio_posto = -1
+	posto_stanza = -1
+	_sala_attesa_tv()
+
+func _sala_attesa_tv() -> void:
+	_pulisci_ui()
+	var fondo := ColorRect.new()
+	fondo.color = Color(0.05, 0.03, 0.02, 0.55)
+	fondo.set_anchors_preset(Control.PRESET_FULL_RECT)
+	radice_ui.add_child(fondo)
+	var cc := CenterContainer.new()
+	cc.set_anchors_preset(Control.PRESET_FULL_RECT)
+	radice_ui.add_child(cc)
+	var pc := PanelContainer.new()
+	pc.add_theme_stylebox_override("panel", _stile_tex("pergamena", 26, 34, 26))
+	cc.add_child(pc)
+	var h := HBoxContainer.new()
+	h.add_theme_constant_override("separation", 30)
+	pc.add_child(h)
+	var sx := VBoxContainer.new()
+	sx.add_theme_constant_override("separation", 6)
+	h.add_child(sx)
+	var qr := _qr_texture(_url_stanza(), 10)
+	qr.custom_minimum_size = Vector2(330, 330)
+	sx.add_child(qr)
+	var u := _etichetta(_url_stanza(), 13, false, BORDO)
+	u.custom_minimum_size = Vector2(330, 0)
+	u.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	sx.add_child(u)
+	var dx := VBoxContainer.new()
+	dx.add_theme_constant_override("separation", 10)
+	dx.custom_minimum_size = Vector2(400, 0)
+	h.add_child(dx)
+	dx.add_child(_etichetta("Il tavolo di Castafon", 34, true))
+	dx.add_child(_etichetta("Ogni re inquadra il codice con il telefono e sceglie il suo nome. Sul telefono deciderà in segreto reclute, incantesimi e mosse; questo schermo mostra a tutti la mappa e le battaglie.", 17))
+	var cs := _etichetta("Stanza  " + codice, 26, true, BORDO)
+	dx.add_child(cs)
+	dx.add_child(_etichetta("Re seduti al tavolo", 20, true))
+	var lista := VBoxContainer.new()
+	dx.add_child(lista)
+	var ia_n := SpinBox.new()
+	ia_n.min_value = 0
+	ia_n.max_value = 4
+	ia_n.value = 1
+	ia_n.prefix = "Re guidati dall'IA:"
+	dx.add_child(ia_n)
+	var err := _etichetta("", 15, false, Color(0.6, 0.1, 0.05))
+	dx.add_child(err)
+	var h2 := HBoxContainer.new()
+	h2.add_theme_constant_override("separation", 8)
+	h2.add_child(_bottone("Esci", func(): online = false; tv = false; _menu(), 18))
+	var av := _veste(_bottone("Avvia la partita", func():
+		var r := await rete.room(codice)
+		var n_umani := Rete._as_dict(r.get("seats", {})).size()
+		if n_umani < 1 or n_umani + int(ia_n.value) < 2:
+			err.text = "Serve almeno un re al telefono e almeno due re in tutto."
+			return
+		_avvia_online(int(ia_n.value)), 20), "verde")
+	av.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	h2.add_child(av)
+	dx.add_child(h2)
+	while is_inside_tree() and m == null and lista.is_inside_tree():
+		var r := await rete.room(codice)
+		if not lista.is_inside_tree():
+			return
+		for c in lista.get_children():
+			c.queue_free()
+		var seats := Rete._as_dict(r.get("seats", {}))
+		var k := seats.keys()
+		k.sort_custom(func(a, b): return int(a) < int(b))
+		if k.is_empty():
+			lista.add_child(_etichetta("Nessuno ancora: inquadrate il codice!", 16, false, Color(INCHIOSTRO, 0.7)))
+		var i := 0
+		for s in k:
+			var riga := HBoxContainer.new()
+			var sc := TextureRect.new()
+			sc.texture = _tex("scudo_%d" % mini(i, 4))
+			sc.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			sc.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+			sc.custom_minimum_size = Vector2(28, 34)
+			riga.add_child(sc)
+			var ln := _etichetta(str(seats[s]["name"]), 20)
+			ln.autowrap_mode = TextServer.AUTOWRAP_OFF
+			riga.add_child(ln)
+			lista.add_child(riga)
+			i += 1
+		if str(r.get("status", "")) == "playing":
+			await _avvia_da_stanza(r)
+			return
+		await get_tree().create_timer(2.0).timeout
+
 func _menu() -> void:
 	tutorial = false
 	var v := _schermo_centrale(540)
@@ -647,7 +812,7 @@ func _inizia(c: Dictionary, decisioni: Array) -> void:
 		m.invia(p, x["d"])
 		registro_dec.append(x)
 	ev_letti = m.eventi.size()
-	plancia.velocita = float(cfg.get("velocita", 1.0))
+	plancia.velocita = float(cfg.get("velocita", 3.0 if telefono else 1.0))
 	plancia.spettatore = umani_locali[0] if umani_locali.size() > 0 else (mio_posto if online else -1)
 	plancia.collega(m)
 	plancia.vista_iniziale()
@@ -873,6 +1038,8 @@ func _costruisci_gioco() -> void:
 	saggio_bottoni.add_theme_constant_override("separation", 8)
 	sv.add_child(saggio_bottoni)
 	_riempi_diario()
+	if telefono:
+		_layout_telefono()
 
 var _icone_ped := {}
 
@@ -880,6 +1047,32 @@ var _icone_ped := {}
 func _icona_pedina(id: int, _lato := 36) -> Texture2D:
 	var perc := Dati.img_pedina(id, true)
 	return load(perc) if perc != "" else null
+
+## Telefono in verticale: mappa nella metà alta, pannello delle decisioni nella metà bassa.
+func _layout_telefono() -> void:
+	fascia_fasi.get_parent().visible = false
+	diario_box.visible = false
+	for b in [btn_rilievo, btn_ill, btn_3d]:
+		if b != null and is_instance_valid(b):
+			b.visible = false
+	barra.get_child(0).visible = false
+	var vert := get_window().content_scale_size.y > get_window().content_scale_size.x
+	if not vert:
+		return
+	pannello.anchor_left = 0.0
+	pannello.anchor_top = 0.47
+	pannello.offset_left = 4
+	pannello.offset_right = -4
+	pannello.offset_top = 0
+	pannello.offset_bottom = -4
+	info.position = Vector2(4, 64)
+	saggio_box.anchor_top = 0.0
+	saggio_box.anchor_bottom = 0.0
+	saggio_box.offset_left = 4
+	saggio_box.offset_right = -4
+	saggio_box.offset_top = 64
+	saggio_box.offset_bottom = 64
+	saggio_box.grow_vertical = Control.GROW_DIRECTION_END
 
 var _icona_s: Texture2D
 func _icona_saggio() -> Texture2D:
@@ -1101,6 +1294,18 @@ func _mostra_attesa() -> void:
 	contenuto.add_child(_rtl("In attesa di: " + chi))
 	if plancia.occupata():
 		contenuto.add_child(_etichetta("Gli eserciti si muovono sulla mappa...", 16, false, BORDO))
+	if tv:
+		var umani := m.attese.filter(func(p): return not m.g[p]["ia"])
+		if not umani.is_empty():
+			contenuto.add_child(_etichetta("I re decidono in segreto sui loro telefoni.", 16, false, BORDO))
+		_divisore(contenuto)
+		contenuto.add_child(_etichetta("Telefono spento o scollegato? Inquadra di nuovo il codice e usa lo stesso nome.", 14, false, Color(INCHIOSTRO, 0.75)))
+		var qr := _qr_texture(_url_stanza(), 6)
+		qr.custom_minimum_size = Vector2(0, 190)
+		contenuto.add_child(qr)
+		var cs := _etichetta("Stanza " + codice, 18, true, BORDO)
+		cs.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		contenuto.add_child(cs)
 	plancia.evidenzia({})
 	plancia.disegna_percorsi([])
 
@@ -1181,7 +1386,7 @@ func _su_click_provincia(q: int) -> void:
 		_mostra_info(q)
 
 func _su_sopra_provincia(q: int) -> void:
-	if q > 0 and m != null and info != null:
+	if q > 0 and m != null and info != null and not telefono:
 		_mostra_info(q)
 
 func _mostra_info(q: int) -> void:
@@ -1264,6 +1469,13 @@ func _mostra_info(q: int) -> void:
 	info.visible = true
 	info.reset_size()
 	_ridimensiona_info.call_deferred()
+	if telefono:
+		# sul telefono la scheda copre la mappa: sparisce da sola
+		_info_n += 1
+		var n := _info_n
+		get_tree().create_timer(5.0).timeout.connect(func():
+			if n == _info_n and info != null and is_instance_valid(info):
+				info.visible = false)
 
 func _ridimensiona_info() -> void:
 	if info != null and is_instance_valid(info):
@@ -1341,7 +1553,7 @@ func _intestazione(p: int, titolo: String, spiega: String) -> void:
 	spiega_pannello.text = spiega
 	spiega_pannello.visible = spiega != ""
 	var k := _carta_fase(m.fase)
-	if k != "" and (Carte.ha_immagine(k, true) or Carte.ha_immagine(k)):
+	if k != "" and not telefono and (Carte.ha_immagine(k, true) or Carte.ha_immagine(k)):
 		var img := TextureRect.new()
 		img.texture = Carte.tex(k, true)
 		img.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
@@ -2254,6 +2466,9 @@ func _menu_online() -> void:
 	nome.placeholder_text = "Il tuo nome"
 	nome.text = str(rete.load_session().get("nome", ""))
 	v.add_child(nome)
+	var bt := _veste(_bottone("Tavolo con TV e telefoni", _crea_tavolo_tv, 20), "verde")
+	bt.tooltip_text = "Questo schermo diventa il tavolo; ogni re gioca in segreto dal suo telefono inquadrando il QR."
+	v.add_child(bt)
 	v.add_child(_bottone("Crea una stanza", func(): _crea_stanza(nome.text.strip_edges())))
 	var h := HBoxContainer.new()
 	var cod := LineEdit.new()
@@ -2313,7 +2528,10 @@ func _entra_stanza(c: String, nome: String) -> void:
 func _sala_attesa() -> void:
 	var v := _schermo_centrale(520)
 	v.add_child(_etichetta("Stanza  " + codice, 30, true))
-	v.add_child(_etichetta("Dai questo codice agli altri re. %s" % ("Tu sei l'host: quando siete pronti avvia la partita." if host else "Aspetta che l'host avvii la partita."), 17))
+	if telefono:
+		v.add_child(_etichetta("Sei seduto al tavolo. Quando tutti i re sono pronti, la partita si avvia dalla TV.", 17))
+	else:
+		v.add_child(_etichetta("Dai questo codice agli altri re. %s" % ("Tu sei l'host: quando siete pronti avvia la partita." if host else "Aspetta che l'host avvii la partita."), 17))
 	var lista := VBoxContainer.new()
 	v.add_child(lista)
 	var ia_n := SpinBox.new()
@@ -2323,7 +2541,8 @@ func _sala_attesa() -> void:
 	if host:
 		v.add_child(ia_n)
 		v.add_child(_bottone("Avvia la partita", func(): _avvia_online(int(ia_n.value))))
-	v.add_child(_bottone("Esci", func(): online = false; _menu()))
+	if not telefono:
+		v.add_child(_bottone("Esci", func(): online = false; _menu()))
 	while is_inside_tree() and m == null and lista.is_inside_tree():
 		var r := await rete.room(codice)
 		if not lista.is_inside_tree():
@@ -2431,7 +2650,8 @@ func _ciclo_online() -> void:
 		await _leggi_online()
 		if not plancia.occupata() and not _in_corso:
 			_passo()
-		rete.heartbeat(codice, maxi(0, posto_stanza))
+		if posto_stanza >= 0:
+			rete.heartbeat(codice, posto_stanza)
 
 # ---------------------------------------------------------------- carte illustrate in sovrimpressione
 
@@ -2474,6 +2694,9 @@ func _mostra_carta(k: String, esito: String) -> void:
 	# in basso a sinistra, al posto della cronaca, per non coprire la mappa
 	pc.position = Vector2(6, vp.y - 6 - pc.size.y)
 	pc.pivot_offset = Vector2(0, pc.size.y)
+	if telefono:
+		pc.position = Vector2(6, 64)
+		pc.pivot_offset = Vector2.ZERO
 	var cronaca_vis := diario_box != null and is_instance_valid(diario_box) and diario_box.visible
 	if cronaca_vis:
 		diario_box.visible = false
@@ -2482,13 +2705,13 @@ func _mostra_carta(k: String, esito: String) -> void:
 	var vel := maxf(plancia.velocita, 1.0)
 	var tw := pc.create_tween()
 	tw.set_parallel(true)
-	tw.tween_property(pc, "scale", Vector2.ONE, 0.35 / vel).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tw.tween_property(pc, "scale", Vector2.ONE * (0.7 if telefono else 1.0), 0.35 / vel).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tw.tween_property(pc, "modulate:a", 1.0, 0.25 / vel)
 	tw.chain().tween_interval(1.8 / vel)
 	tw.chain().tween_property(pc, "modulate:a", 0.0, 0.4 / vel)
 	tw.chain().tween_callback(func():
 		pc.queue_free()
-		if cronaca_vis and is_instance_valid(diario_box) and not (saggio_box != null and is_instance_valid(saggio_box) and saggio_box.visible):
+		if cronaca_vis and not telefono and is_instance_valid(diario_box) and not (saggio_box != null and is_instance_valid(saggio_box) and saggio_box.visible):
 			diario_box.visible = true)
 	_carta_vista = pc
 
@@ -2554,12 +2777,15 @@ func _saggio_pagina() -> void:
 			saggio_bottoni.add_child(b)
 		if _saggio_finale.is_empty():
 			saggio_bottoni.add_child(_veste(_bottone("Ho capito", _chiudi_saggio, 15), "secondario"))
-	saggio_box.offset_top = saggio_box.offset_bottom
+	if saggio_box.grow_vertical == Control.GROW_DIRECTION_END:
+		saggio_box.offset_bottom = saggio_box.offset_top
+	else:
+		saggio_box.offset_top = saggio_box.offset_bottom
 
 func _chiudi_saggio() -> void:
 	if saggio_box != null and is_instance_valid(saggio_box):
 		saggio_box.visible = false
-		diario_box.visible = true
+		diario_box.visible = not telefono
 
 func _descr_incanto(inc: Dictionary) -> String:
 	var s: String = inc.get("s", "")

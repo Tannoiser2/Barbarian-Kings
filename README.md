@@ -17,6 +17,10 @@ Si gioca nel browser: https://tannoiser2.github.io/Barbarian-Kings/
   primi tre anni, suggerisce le scelte e commenta la prima battaglia, il primo blocco, la prima cattura.
 - **Libro "Come si gioca"** in dodici capitoli illustrati con le pedine originali: scopo, mappa, pedine, anno di
   gioco, denaro, movimento, combattimento con la tabella dei risultati, magia, alleanze, comandi, consigli.
+- **Tavolo con TV e telefoni**: la TV mostra la mappa e un codice QR (`scripts/qr.gd`); ogni re lo inquadra e gioca
+  in segreto dal telefono (indirizzo `?stanza=CODICE`, interfaccia verticale con mappa in alto e decisioni in
+  basso). Le decisioni passano da Firebase come nella partita online; la TV non ha un posto e non mostra i piani.
+  Prova: `tests/tavolo_auto.gd`.
 - **Scuola di magia**: una partita guidata in cui il Re conosce mente, elementi e necromanzia; il Saggio spiega
   ogni incantesimo quando si può lanciare, con valori e probabilità, e commenta ogni tiro di dado.
 - **Carte illustrate** per incantesimi, abilità e azioni (scelta a carte nel pannello, carta in sovrimpressione

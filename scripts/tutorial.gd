@@ -308,7 +308,10 @@ Clic su una provincia: la sceglie o ne mostra la scheda.[/indent]
 
 %s
 Nella stessa partita possono giocare persone e IA. Se più persone giocano sullo stesso dispositivo, prima di ogni decisione segreta lo schermo si copre e chiede di passarlo al giocatore giusto.
-Dal menu in alto puoi salvare la partita sul dispositivo o nel cloud (Firebase) e riprenderla più tardi. Con [b]Gioca online[/b] crei una stanza e la condividi con un codice: ognuno gioca dal suo dispositivo.""" % [_t("Lo schermo"), _t("Il Consiglio del Saggio"), _t("La telecamera"), _t("Persone, IA e salvataggi")]
+Dal menu in alto puoi salvare la partita sul dispositivo o nel cloud (Firebase) e riprenderla più tardi. Con [b]Gioca online[/b] crei una stanza e la condividi con un codice: ognuno gioca dal suo dispositivo.
+
+%s
+In [b]Gioca online[/b] scegli [b]Tavolo con TV e telefoni[/b]: lo schermo grande (TV o computer) mostra un codice QR. Ogni re lo inquadra con il telefono, scrive il suo nome e da quel momento decide in segreto sul telefono: province, abilità, reclute, incantesimi e percorsi di marcia. La TV mostra a tutti la mappa, i movimenti e le battaglie, ma mai i piani segreti. Se un telefono si spegne, basta inquadrare di nuovo il codice e usare lo stesso nome.""" % [_t("Lo schermo"), _t("Il Consiglio del Saggio"), _t("La telecamera"), _t("Persone, IA e salvataggi"), _t("Il tavolo con la TV e i telefoni")]
 
 static func _cap_consigli() -> String:
 	return """%s Province vicine fra loro si difendono a vicenda e permettono di spostare le truppe in fretta. Cerca un buon equilibrio tra tasse alte e popoli forti da reclutare.
